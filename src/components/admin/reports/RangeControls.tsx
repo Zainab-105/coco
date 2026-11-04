@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
-import { COMPARE_MODES, RANGE_PRESETS } from '@/lib/reports/range'
+import { COMPARE_MODES, GRANULARITIES, RANGE_PRESETS, type Granularity } from '@/lib/reports/range'
 
 const control = {
   minHeight: 34,
@@ -15,8 +15,8 @@ const control = {
   fontSize: 13,
 } as const
 
-/** Date preset, custom range and comparison pickers. State lives in the URL so views are shareable. */
-export function RangeControls({ from, to }: { from: string; to: string }) {
+/** Date preset, custom range, grouping and comparison pickers. State lives in the URL so views are shareable. */
+export function RangeControls({ from, to, granularity }: { from: string; to: string; granularity: Granularity }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
@@ -42,7 +42,7 @@ export function RangeControls({ from, to }: { from: string; to: string }) {
           style={control}
           value={preset}
           onChange={(e) =>
-            go(e.target.value === 'custom' ? { range: 'custom', ...custom } : { range: e.target.value, from: null, to: null })
+            go(e.target.value === 'custom' ? { range: 'custom', group: null, ...custom } : { range: e.target.value, group: null, from: null, to: null })
           }
         >
           {Object.entries(RANGE_PRESETS).map(([value, label]) => (
@@ -68,6 +68,16 @@ export function RangeControls({ from, to }: { from: string; to: string }) {
           </button>
         </form>
       )}
+      <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
+        <label htmlFor="report-group">Group by</label>
+        <select id="report-group" style={control} value={granularity} onChange={(e) => go({ group: e.target.value })}>
+          {Object.entries(GRANULARITIES).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </span>
       <span style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 13 }}>
         <label htmlFor="report-compare">Compare with</label>
         <select id="report-compare" style={control} value={compare} onChange={(e) => go({ compare: e.target.value })}>

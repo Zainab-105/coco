@@ -88,7 +88,7 @@ export async function ReportsView({ initPageResult, params, searchParams }: Admi
                 {range.previous ? ` · compared with ${describeRange(range.previous)}` : ''} · Pakistan time
               </p>
             </div>
-            <RangeControls from={pktDay(range.from)} to={pktDay(new Date(range.to.getTime() - 1))} />
+            <RangeControls from={pktDay(range.from)} to={pktDay(new Date(range.to.getTime() - 1))} granularity={range.granularity} />
           </header>
 
           <nav aria-label="Report sections" style={{ display: 'flex', gap: 8, overflowX: 'auto', borderBottom: '1px solid var(--theme-elevation-150)' }}>
@@ -154,6 +154,7 @@ function Overview({ report, tables, canSeeCosts, exportHref }: SectionProps & { 
         >
           <InsightChart
             label="Net sales over time"
+            granularity={report.range.granularity}
             metrics={[{ key: 'netSales', label: 'Net sales', kind: 'money' }]}
             points={series.map((s, i) => ({
               key: s.key,
@@ -163,7 +164,7 @@ function Overview({ report, tables, canSeeCosts, exportHref }: SectionProps & { 
           />
         </Panel>
         <Panel title="Orders">
-          <BarChart label="Orders over time" points={series.map((s) => ({ key: s.key, value: s.orders }))} format={count} />
+          <BarChart label="Orders over time" points={series.map((s) => ({ key: s.key, value: s.orders }))} format={count} granularity={report.range.granularity} />
         </Panel>
       </div>
 
@@ -329,6 +330,10 @@ function Inventory({ report, tables, exportHref }: SectionProps) {
         <Kpi label="Low stock" value={count(inv.lowStock)} />
         <Kpi label="Out of stock" value={count(inv.outOfStock)} />
       </KpiGrid>
+      <div style={grid()}>
+        <ReportTable table={tables.restock} exportHref={exportHref('restock')} />
+        <ReportTable table={tables.promote} exportHref={exportHref('promote')} />
+      </div>
       <ReportTable table={tables.inventory} exportHref={exportHref('inventory')} />
       <ReportTable table={tables.slowSellers} exportHref={exportHref('slowSellers')} />
     </>

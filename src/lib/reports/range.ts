@@ -14,6 +14,7 @@ export const RANGE_PRESETS = {
   mtd: 'This month',
   last_month: 'Last month',
   ytd: 'This year',
+  last_year: 'Last year',
   custom: 'Custom range',
 } as const
 export type RangePreset = keyof typeof RANGE_PRESETS
@@ -21,7 +22,8 @@ export type RangePreset = keyof typeof RANGE_PRESETS
 export const COMPARE_MODES = { previous: 'Previous period', year: 'Same period last year', none: 'No comparison' } as const
 export type CompareMode = keyof typeof COMPARE_MODES
 
-export type Granularity = 'day' | 'week' | 'month'
+export const GRANULARITIES = { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' } as const
+export type Granularity = keyof typeof GRANULARITIES
 
 /** `to` is exclusive. */
 export type DateRange = { from: Date; to: Date }
@@ -32,6 +34,8 @@ export type ReportRange = DateRange & {
   compare: CompareMode
   previous?: DateRange
   granularity: Granularity
+  /** Set when the owner chose the grouping; otherwise it follows the length of the range. */
+  group?: Granularity
 }
 
 /** "2026-11-02" for the PKT calendar day containing `date`. */
@@ -78,6 +82,8 @@ function presetRange(preset: Exclude<RangePreset, 'custom'>, now: Date): DateRan
     }
     case 'ytd':
       return { from: pktMidnight(`${day.slice(0, 4)}-01-01`), to: tomorrow }
+    case 'last_year':
+      return { from: pktMidnight(`${Number(day.slice(0, 4)) - 1}-01-01`), to: pktMidnight(`${day.slice(0, 4)}-01-01`) }
   }
 }
 
@@ -114,7 +120,8 @@ export function describeRange(range: DateRange): string {
 
 /**
  * Reads ?range=30d&compare=previous (or ?range=custom&from=YYYY-MM-DD&to=YYYY-MM-DD, both
- * inclusive). Unknown or invalid input falls back to the last 30 days.
+ * inclusive), plus an optional &group=day|week|month|year. Unknown or invalid input falls back
+ * to the last 30 days and automatic grouping.
  */
 export function parseReportRange(params: Record<string, string | string[] | undefined>, now = new Date()): ReportRange {
   const get = (key: string) => {
@@ -139,13 +146,17 @@ export function parseReportRange(params: Record<string, string | string[] | unde
     range = presetRange(preset, now)
   }
 
+  const asked = get('group')
+  const group = asked && asked in GRANULARITIES ? (asked as Granularity) : undefined
+
   return {
     ...range,
     preset,
     compare,
     label: preset === 'custom' ? describeRange(range) : RANGE_PRESETS[preset],
     previous: comparisonRange(range, compare),
-    granularity: granularityFor(range),
+    granularity: group ?? granularityFor(range),
+    group,
   }
 }
 
@@ -154,6 +165,7 @@ export function bucketKey(date: Date, granularity: Granularity): string {
   const day = pktDay(date)
   if (granularity === 'day') return day
   if (granularity === 'month') return `${day.slice(0, 7)}-01`
+  if (granularity === 'year') return `${day.slice(0, 4)}-01-01`
   const weekday = (new Date(`${day}T00:00:00Z`).getUTCDay() + 6) % 7
   return pktDay(addDays(pktMidnight(day), -weekday))
 }
@@ -166,16 +178,17 @@ export function bucketKeys(range: DateRange, granularity: Granularity): string[]
   while (key <= lastKey && keys.length < 1200) {
     keys.push(key)
     key =
-      granularity === 'month'
-        ? addMonths(key, 1)
+      granularity === 'month' || granularity === 'year'
+        ? addMonths(key, granularity === 'year' ? 12 : 1)
         : pktDay(addDays(pktMidnight(key), granularity === 'week' ? 7 : 1))
   }
   return keys
 }
 
 /** Query-string for a range, used by links and exports. */
-export function rangeQuery(range: Pick<ReportRange, 'preset' | 'compare' | 'from' | 'to'>): string {
+export function rangeQuery(range: Pick<ReportRange, 'preset' | 'compare' | 'from' | 'to' | 'group'>): string {
   const q = new URLSearchParams({ range: range.preset, compare: range.compare })
+  if (range.group) q.set('group', range.group)
   if (range.preset === 'custom') {
     q.set('from', pktDay(range.from))
     q.set('to', pktDay(new Date(range.to.getTime() - 1)))

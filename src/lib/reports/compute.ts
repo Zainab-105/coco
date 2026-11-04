@@ -177,7 +177,7 @@ export function change(current: number, previous: number | undefined): number | 
 
 export type SeriesPoint = { key: string; netSales: number; orders: number }
 
-/** Net sales and revenue orders per day/week/month, including empty buckets. */
+/** Net sales and revenue orders per day/week/month/year, including empty buckets. */
 export function timeSeries(orders: ReportOrder[], range: DateRange, granularity: Granularity): SeriesPoint[] {
   const points = new Map(bucketKeys(range, granularity).map((key) => [key, { key, netSales: 0, orders: 0 }]))
   for (const o of orders) {
@@ -362,6 +362,8 @@ export type InventoryRow = {
   daysOfCover: number | null
   status: 'in_stock' | 'low_stock' | 'out_of_stock'
   missingCost: boolean
+  /** Published before the period began, so its sales in the period are a fair signal. */
+  established: boolean
 }
 
 export type InventorySummary = {
@@ -406,6 +408,7 @@ export function inventoryReport(orders: ReportOrder[], products: ReportProduct[]
         daysOfCover: unitsSold ? Math.round(stock / (unitsSold / days)) : null,
         status: lowest <= 0 ? 'out_of_stock' : lowest <= p.lowStockThreshold ? 'low_stock' : 'in_stock',
         missingCost,
+        established: p.status === 'published' && new Date(p.createdAt) < range.from,
       }
     })
     .sort((a, b) => (a.daysOfCover ?? Infinity) - (b.daysOfCover ?? Infinity) || a.stock - b.stock)
@@ -418,6 +421,23 @@ export function inventoryReport(orders: ReportOrder[], products: ReportProduct[]
     outOfStock: rows.filter((r) => r.status === 'out_of_stock').length,
     missingCost: rows.filter((r) => r.missingCost).length,
   }
+}
+
+export const RESTOCK_WITHIN_DAYS = 14
+export const PROMOTE_OVER_DAYS = 60
+
+/**
+ * Suggestions from stock and the period's sales. Restock: selling, and low, or running out within
+ * two weeks. Promote: plenty of stock that sold nothing, or would take over two months to sell.
+ */
+export function stockInsights(rows: InventoryRow[]) {
+  const restock = rows
+    .filter((r) => r.unitsSold > 0 && (r.status !== 'in_stock' || (r.daysOfCover ?? Infinity) <= RESTOCK_WITHIN_DAYS))
+    .sort((a, b) => (a.daysOfCover ?? Infinity) - (b.daysOfCover ?? Infinity))
+  const promote = rows
+    .filter((r) => r.established && r.stock > 0 && r.status === 'in_stock' && (r.daysOfCover === null || r.daysOfCover >= PROMOTE_OVER_DAYS))
+    .sort((a, b) => (b.daysOfCover ?? Infinity) - (a.daysOfCover ?? Infinity) || b.stock - a.stock)
+  return { restock, promote }
 }
 
 export type ExpenseRow = { category: string; amount: number }
