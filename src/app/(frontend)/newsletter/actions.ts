@@ -9,8 +9,8 @@ import { clientIp, throttled } from '@/lib/throttle'
 export type NewsletterState = { ok?: boolean; message?: string }
 
 export async function subscribeAction(_prev: NewsletterState, formData: FormData): Promise<NewsletterState> {
-  // Honeypot: bots fill every field. Pretend it worked.
-  if (formData.get('company')) return { ok: true, message: 'Thank you for subscribing.' }
+  // Marketing needs real consent, so a filled trap field never subscribes. It can be autofill, so say so.
+  if (formData.get('leave_empty')) return { ok: false, message: 'We could not sign you up. Please turn off autofill and try again.' }
 
   const ip = clientIp(await headers())
   if (throttled(`newsletter:${ip}`)) return { ok: false, message: 'Too many attempts. Please try again later.' }

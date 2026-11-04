@@ -174,6 +174,22 @@ test('guest checkout with Cash on Delivery and a discount code', async ({ page }
   await expect(page.getByText(/Cash on Delivery\./)).toBeVisible()
 })
 
+test('an autofilled hidden field does not stop a real customer ordering', async ({ page }) => {
+  await page.goto('/products/smokeless-car-ashtray')
+  await page.getByRole('button', { name: 'Add to cart' }).first().click()
+  await page.getByRole('dialog', { name: /Your cart/ }).getByRole('link', { name: 'Checkout' }).click()
+
+  await page.getByLabel('Full name').fill('Autofill Tester')
+  await page.getByLabel('Mobile number').fill(`0301${String(Date.now()).slice(-7)}`)
+  await page.getByLabel('City').fill('Lahore')
+  await page.getByLabel('Complete address').fill('House 2, Street 2, Model Town')
+  const checkout = page.locator('form', { has: page.getByRole('button', { name: /Place order/ }) })
+  await checkout.getByLabel('Leave this field empty').fill('https://example.com', { force: true })
+
+  await page.getByRole('button', { name: /Place order/ }).click()
+  await expect(page).toHaveURL(/\/order\/COCO-\d{6}-[A-Z0-9]{4}\?t=[a-f0-9]{32}/)
+})
+
 test('checkout shows field errors', async ({ page }) => {
   await page.goto('/products/smokeless-car-ashtray')
   await page.getByRole('button', { name: 'Add to cart' }).first().click()
@@ -190,4 +206,13 @@ test('footer newsletter sign-up confirms the subscription', async ({ page }) => 
   await footer.getByLabel(/New scents and offers/).fill(`e2e-${Date.now()}@example.com`)
   await footer.getByRole('button', { name: 'Join' }).click()
   await expect(footer.getByText('Thank you! New scents and offers will reach your inbox.')).toBeVisible()
+})
+
+test('newsletter says so when an autofilled hidden field stops a sign-up', async ({ page }) => {
+  await page.goto('/')
+  const footer = page.locator('footer')
+  await footer.getByLabel(/New scents and offers/).fill(`e2e-autofill-${Date.now()}@example.com`)
+  await footer.getByLabel('Leave this field empty').fill('Acme Ltd', { force: true })
+  await footer.getByRole('button', { name: 'Join' }).click()
+  await expect(footer.getByText(/turn off autofill/)).toBeVisible()
 })

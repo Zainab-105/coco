@@ -17,7 +17,7 @@ import {
   saveWishlist,
   verifyLoginCode,
 } from '@/lib/account/core'
-import { submitReview, submitTicket } from '@/lib/support/server'
+import { submitReview, submitTicket, SUSPECTED_BOT_TICKET_NOTE } from '@/lib/support/server'
 import { validateReview } from '@/lib/support/validate'
 
 import { assertTestDatabase } from '../helpers/testDb'
@@ -191,6 +191,12 @@ describe('reviews, support and accounts', () => {
       expect(await payload.findByID({ collection: 'support-tickets', id: other.id, depth: 0 })).toMatchObject({ order: null, priority: 'normal', orderReference: order.orderNumber })
       // Emails are sent in the background: let them land before the next test.
       await vi.waitFor(() => expect(sentEmails.filter((e) => e.to === 'help@coco.test')).toHaveLength(2))
+
+      // An autofilled trap field must not lose the message: it is kept, with a note for staff.
+      const flagged = await submitTicket({ type: 'complaint', name: 'Autofill', phone: '+923009998878', message: 'My parcel never came.' }, [], { suspectedBot: true })
+      if (!flagged.ok) throw new Error('failed')
+      expect(await payload.findByID({ collection: 'support-tickets', id: flagged.id, depth: 0 })).toMatchObject({ resolutionNotes: SUSPECTED_BOT_TICKET_NOTE, status: 'open' })
+      await vi.waitFor(() => expect(sentEmails.filter((e) => e.to === 'help@coco.test')).toHaveLength(3))
     })
 
     it('is not readable by the public', async () => {

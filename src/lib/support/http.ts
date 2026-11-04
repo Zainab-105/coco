@@ -42,5 +42,5 @@ export async function readPublicForm(request: Request, throttleKey: string): Pro
   return { fields, files }
 }
 
-/** Bots fill every field; answer as if it worked. */
-export const isBot = (fields: Record<string, unknown>) => Boolean(fields.company)
+/** Filled by bots, but sometimes by autofill tools too, so it flags a submission rather than dropping it. */
+export const honeypotFilled = (fields: Record<string, unknown>) => Boolean(fields.company)

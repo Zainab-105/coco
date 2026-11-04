@@ -83,6 +83,33 @@ test('the contact form creates a support ticket', async ({ page }) => {
   expect(docs[0]).toMatchObject({ type: 'complaint', priority: 'high', status: 'open', phone: '+923001234567', orderReference: 'COCO-TEST-1' })
 })
 
+test('an autofilled hidden field does not lose a complaint or a review', async ({ page }) => {
+  await page.goto('/contact')
+  const contact = page.locator('form', { has: page.getByRole('button', { name: 'Send message' }) })
+  await contact.getByLabel('Your name').fill(contactName)
+  await contact.getByLabel('Your message').fill('Filled in by my autofill tool, please still read this.')
+  await contact.getByLabel('Mobile number').fill('0300 1234568')
+  await contact.getByLabel('Leave this field empty').fill('Acme Ltd', { force: true })
+  await contact.getByRole('button', { name: 'Send message' }).click()
+  await expect(page.getByText(/We received your message \(reference #\d+\)/)).toBeVisible({ timeout: 30_000 })
+
+  const payload = await client()
+  const tickets = await payload.find({ collection: 'support-tickets', where: { phone: { equals: '+923001234568' } }, sort: '-createdAt', limit: 1 })
+  expect(tickets.docs[0].resolutionNotes).toMatch(/anti-bot field/)
+
+  await page.goto('/products/smokeless-car-ashtray')
+  await page.getByRole('button', { name: 'Write a review' }).click()
+  const review = page.locator('form', { has: page.getByRole('button', { name: 'Submit review' }) })
+  await page.locator('label', { has: page.getByRole('radio', { name: /^4 stars/ }) }).click()
+  await review.getByLabel('Your name').fill(author)
+  await review.getByLabel('Your review').fill('Filled in by my autofill tool and still worth reading.')
+  await review.getByLabel('Leave this field empty').fill('Acme Ltd', { force: true })
+  await review.getByRole('button', { name: 'Submit review' }).click()
+  await expect(page.getByText(/Your review will appear here/)).toBeVisible({ timeout: 30_000 })
+  const reviews = await payload.find({ collection: 'reviews', where: { and: [{ authorName: { equals: author } }, { status: { equals: 'pending' } }] } })
+  expect(reviews.docs).toHaveLength(1)
+})
+
 test('sign in with an emailed code, save details, use them at checkout, sign out', async ({ page }) => {
   await page.goto('/account')
   await page.getByLabel('Email').fill(email)

@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 
 import { subscribeAction, type NewsletterState } from '@/app/(frontend)/newsletter/actions'
 import { useTurnstile } from '@/components/support/useTurnstile'
+import { Honeypot } from '@/components/ui/Honeypot'
 
 /** Footer email sign-up. Consent is explicit: nothing is pre-ticked and the purpose is stated. */
 export function NewsletterForm() {
@@ -45,8 +46,7 @@ export function NewsletterForm() {
       </div>
       <input type="hidden" name="turnstile" value={turnstile.token} />
       {turnstile.element}
-      {/* Honeypot for bots: hidden from people and screen readers. */}
-      <input name="company" tabIndex={-1} autoComplete="off" aria-hidden className="absolute -left-[9999px] h-0 w-0 opacity-0" />
+      <Honeypot name="leave_empty" />
       <p id="newsletter-status" aria-live="polite" className="min-h-4 text-xs opacity-90">
         {state.message ?? 'Unsubscribe any time.'}
       </p>

@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import config from '@/payload.config'
 import type { Product } from '@/payload-types'
-import { CheckoutError, findCustomerOrder, placeOrder } from '@/lib/checkout/server'
+import { CheckoutError, findCustomerOrder, placeOrder, SUSPECTED_BOT_NOTE } from '@/lib/checkout/server'
 import type { CheckoutForm } from '@/lib/checkout/validate'
 import { recordPayment } from '@/lib/payments/record'
 
@@ -96,6 +96,16 @@ describe('checkout', () => {
 
     const coupon = (await payload.find({ collection: 'coupons', where: { code: { equals: 'ONCE10' } } })).docs[0]
     expect(coupon.usageCount).toBe(1)
+  })
+
+  it('keeps an order whose hidden anti-bot field was autofilled, and flags it for staff', async () => {
+    const placed = await placeOrder(form({ phone: '+923000000009', website: 'https://example.com' }), [{ productId: lamp.id, quantity: 1 }])
+    const flagged = await payload.findByID({ collection: 'orders', id: placed.id, depth: 0 })
+    expect(flagged.internalNotes?.[0]?.note).toBe(SUSPECTED_BOT_NOTE)
+
+    const normal = await placeOrder(form({ phone: '+923000000010' }), [{ productId: lamp.id, quantity: 1 }])
+    expect((await payload.findByID({ collection: 'orders', id: normal.id, depth: 0 })).internalNotes ?? []).toHaveLength(0)
+    await payload.update({ collection: 'products', id: lamp.id, data: { stock: 3 } })
   })
 
   it('only shows an order with the right token or phone', async () => {

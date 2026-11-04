@@ -8,6 +8,7 @@ import { FilePicker, postForm } from '@/components/support/FilePicker'
 import { useTurnstile } from '@/components/support/useTurnstile'
 import { Button } from '@/components/ui/Button'
 import { TextAreaField, TextField } from '@/components/ui/Field'
+import { Honeypot } from '@/components/ui/Honeypot'
 import { cn } from '@/lib/cn'
 
 const LABELS = ['', 'Poor', 'Fair', 'Good', 'Very good', 'Excellent']
@@ -112,13 +113,7 @@ export function ReviewForm({ productId }: { productId: number }) {
             </details>
           )}
 
-          {/* Honeypot for bots: hidden from people and screen readers. */}
-          <div aria-hidden className="absolute -left-[9999px] h-0 overflow-hidden">
-            <label>
-              Company
-              <input tabIndex={-1} autoComplete="off" value={fields.company} onChange={set('company')} />
-            </label>
-          </div>
+          <Honeypot value={fields.company} onChange={set('company')} />
 
           {(errors.form || (orderLink && errors.orderNumber)) && (
             <p role="alert" className="border-l-4 border-danger bg-danger/5 px-4 py-3 text-sm text-danger">

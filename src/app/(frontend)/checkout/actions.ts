@@ -79,9 +79,6 @@ export async function placeOrderAction(input: { form: Record<string, unknown>; l
   const { data, errors } = validateCheckout(input.form ?? {})
   if (!data) return { ok: false, errors }
 
-  // Honeypot filled (bots): reject without revealing why.
-  if (data.website) return { ok: false, errors: { form: 'Something went wrong. Please try again.' } }
-
   const ip = clientIp(await headers())
   if (throttled(`ip:${ip}`) || throttled(`phone:${data.phone}`, 4)) {
     return { ok: false, errors: { form: 'Too many orders in a short time. Please wait a few minutes or message us on WhatsApp.' } }

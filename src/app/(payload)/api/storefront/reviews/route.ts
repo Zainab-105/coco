@@ -1,6 +1,6 @@
 import { getCurrentAccount } from '@/lib/account/server'
 import { TURNSTILE_FAILED, verifyTurnstile } from '@/lib/security/turnstile'
-import { isBot, readPublicForm } from '@/lib/support/http'
+import { readPublicForm } from '@/lib/support/http'
 import { submitReview } from '@/lib/support/server'
 import { validateReview } from '@/lib/support/validate'
 import { clientIp } from '@/lib/throttle'
@@ -9,7 +9,6 @@ import { clientIp } from '@/lib/throttle'
 export async function POST(request: Request) {
   const input = await readPublicForm(request, 'review')
   if (input instanceof Response) return input
-  if (isBot(input.fields)) return Response.json({ ok: true })
 
   const { data, errors } = validateReview(input.fields)
   if (!data) return Response.json({ ok: false, errors }, { status: 400 })

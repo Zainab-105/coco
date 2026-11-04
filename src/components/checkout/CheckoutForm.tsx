@@ -13,6 +13,7 @@ import { useTurnstile } from '@/components/support/useTurnstile'
 import { WhatsAppIcon } from '@/components/ui/BrandIcons'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { TextAreaField, TextField } from '@/components/ui/Field'
+import { Honeypot } from '@/components/ui/Honeypot'
 import { trackEvent } from '@/lib/analytics'
 import { PK_CITIES } from '@/lib/checkout/cities'
 import type { Quote } from '@/lib/checkout/quote'
@@ -381,12 +382,7 @@ export function CheckoutForm({
         </label>
 
         {/* Honeypot for bots: hidden from people and screen readers. */}
-        <div aria-hidden className="absolute -left-[9999px] h-0 overflow-hidden">
-          <label>
-            Website
-            <input tabIndex={-1} autoComplete="off" value={fields.website} onChange={set('website')} />
-          </label>
-        </div>
+        <Honeypot value={fields.website} onChange={set('website')} />
 
         <div className="space-y-3">
           {turnstile.element}

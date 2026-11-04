@@ -141,8 +141,10 @@ export async function submitReview(form: ReviewForm, files: IncomingFile[], acco
   }
 }
 
+export const SUSPECTED_BOT_TICKET_NOTE = 'The hidden anti-bot field was filled: possibly automated, or just browser autofill. Check before replying.'
+
 /** Creates a support ticket, alerts the store and acknowledges to the customer. */
-export async function submitTicket(form: TicketForm, files: IncomingFile[]): Promise<SubmitResult> {
+export async function submitTicket(form: TicketForm, files: IncomingFile[], { suspectedBot = false } = {}): Promise<SubmitResult> {
   const problem = uploadProblem(files)
   if (problem) return { ok: false, errors: { files: problem } }
 
@@ -176,6 +178,7 @@ export async function submitTicket(form: TicketForm, files: IncomingFile[]): Pro
         customer: customerMatch?.docs[0]?.id,
         attachments,
         status: 'open',
+        resolutionNotes: suspectedBot ? SUSPECTED_BOT_TICKET_NOTE : undefined,
       },
       overrideAccess: true,
     })

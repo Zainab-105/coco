@@ -1,5 +1,5 @@
 import { TURNSTILE_FAILED, verifyTurnstile } from '@/lib/security/turnstile'
-import { isBot, readPublicForm } from '@/lib/support/http'
+import { honeypotFilled, readPublicForm } from '@/lib/support/http'
 import { submitTicket } from '@/lib/support/server'
 import { validateTicket } from '@/lib/support/validate'
 import { clientIp } from '@/lib/throttle'
@@ -8,7 +8,6 @@ import { clientIp } from '@/lib/throttle'
 export async function POST(request: Request) {
   const input = await readPublicForm(request, 'contact')
   if (input instanceof Response) return input
-  if (isBot(input.fields)) return Response.json({ ok: true })
 
   const { data, errors } = validateTicket(input.fields)
   if (!data) return Response.json({ ok: false, errors }, { status: 400 })
@@ -17,7 +16,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await submitTicket(data, input.files)
+    const result = await submitTicket(data, input.files, { suspectedBot: honeypotFilled(input.fields) })
     return Response.json(result.ok ? { ok: true, reference: result.id } : result, { status: result.ok ? 201 : 400 })
   } catch (error) {
     console.error('[contact] submission failed', error)

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 
 import { Button } from '@/components/ui/Button'
 import { TextAreaField, TextField } from '@/components/ui/Field'
+import { Honeypot } from '@/components/ui/Honeypot'
 import { TICKET_TYPES } from '@/lib/support/validate'
 
 import { FilePicker, postForm } from './FilePicker'
@@ -60,13 +61,7 @@ export function ContactForm({ initialOrder = '' }: { initialOrder?: string }) {
       <TextAreaField label="Your message" value={fields.message} onChange={set('message')} error={errors.message} maxLength={4000} required />
       <FilePicker files={files} onChange={setFiles} error={errors.files} onError={(m) => setErrors((er) => ({ ...er, files: m }))} />
 
-      {/* Honeypot for bots: hidden from people and screen readers. */}
-      <div aria-hidden className="absolute -left-[9999px] h-0 overflow-hidden">
-        <label>
-          Company
-          <input tabIndex={-1} autoComplete="off" value={fields.company} onChange={set('company')} />
-        </label>
-      </div>
+      <Honeypot value={fields.company} onChange={set('company')} />
 
       {errors.form && (
         <p role="alert" className="border-l-4 border-danger bg-danger/5 px-4 py-3 text-sm text-danger">

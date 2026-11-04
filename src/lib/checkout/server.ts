@@ -24,6 +24,12 @@ import type { CheckoutForm } from './validate'
 
 const getPayloadClient = () => getPayload({ config })
 
+/**
+ * Autofill tools can fill the hidden anti-bot field too, so a real customer must never lose their
+ * order to it. The order goes through, and staff confirm it by phone as with any new order.
+ */
+export const SUSPECTED_BOT_NOTE = 'The hidden anti-bot field was filled at checkout: possibly automated, or just browser autofill. Confirm by phone before shipping.'
+
 const imageOf = (media: unknown) => toMediaItem(media as Media, 'card')?.src
 
 function toCatalogProduct(p: Product): CatalogProduct {
@@ -229,6 +235,7 @@ export async function placeOrder(form: CheckoutForm, lines: QuoteLineInput[]): P
         },
         email: form.email,
         marketingConsent: form.marketingConsent,
+        internalNotes: form.website ? [{ note: SUSPECTED_BOT_NOTE }] : undefined,
         gift: { wrap: quote.giftWrapFee > 0, wrapFee: quote.giftWrapFee, note: form.giftNote },
         payment: {
           method: form.paymentMethod,
