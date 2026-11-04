@@ -1,0 +1,313 @@
+﻿COCO website Requirement document
+
+
+Logo:
+
+
+
+
+  
+
+Sample color combination for website: 
+
+  
+
+Categories:
+
+1. Car Scents
+* Hanging car diffusers
+
+2. Car Accessories
+   * Car Ashtray  
+   * Car front showpiece
+
+
+3. Home Scents
+   * Room diffusers
+
+
+4. Gift Sets
+
+
+COCO — Complete E-Commerce Website Requirements
+Project: COCO Online Store
+Purpose: Build a premium, mobile-first e-commerce website with a powerful admin panel to manage products, orders, customers, sales and business growth.
+The website must have two connected parts:
+   1. Customer-Facing Website — where customers browse products and place orders.
+   2. Admin Panel — where I manage the entire store, customer database, orders, inventory, analytics and business operations.
+1. Brand & Product Categories
+   * Brand name: COCO
+   * Premium, modern, luxury-inspired design.
+   * Use COCO's approved brand identity and colour palette.
+   * Categories:
+   * Car Scents: Hanging Car Diffusers
+   * Car Accessories: Car Ashtrays, Car Front Showpieces
+   * Home Scents: Room Diffusers
+   * Gift Sets
+   * The website must allow new categories, products and variants to be added easily in the future.
+Part A — Customer-Facing Website
+2. Website Design & Navigation
+   * Fully responsive design for mobile, tablet and desktop.
+   * Mobile-first layout with easy, thumb-friendly navigation.
+   * Premium, clean and professional interface.
+   * Header with logo, menu, search, account and cart icons.
+   * Easy navigation between all product categories.
+   * Sticky or easily accessible mobile navigation.
+   * Clear footer with contact details, policies and social media links.
+   * Fast loading, smooth interactions and optimized images/videos.
+   * Readable fonts, accessible colours and clearly visible buttons.
+3. Product Categories & Listing Pages
+   * Display products in a clean grid: preferably two products per row on mobile and more columns on desktop.
+   * Every product card should show:
+   * Product image
+   * Product name
+   * Price and sale price, if applicable
+   * Discount, if available
+   * Stock availability
+   * Swipeable product images and videos: Customers should be able to swipe left or right on a product card to view its additional photos and videos without opening the product page.
+   * Add clear dots or indicators to show that more media is available.
+   * On desktop, provide arrows or another easy way to browse product media.
+   * Quick View popup to see product details without leaving the category page.
+   * Quick Add to Cart button.
+   * Wishlist or favourite products feature.
+   * Search bar with product suggestions.
+   * Sorting by price, newest arrivals and popularity.
+   * Filters for price, product type, fragrance and availability where relevant.
+   * Load More or pagination for larger product collections.
+4. Product Detail Pages
+   * Multiple high-quality images from different angles.
+   * Product videos displayed within the same gallery.
+   * Full-screen image viewing and zoom functionality.
+   * Product name, price, discount and detailed description.
+   * Product features and specifications.
+   * Fragrance names, scent profiles and notes for diffusers.
+   * Product variations and fragrance selection where applicable.
+   * Quantity selector and Add to Cart button.
+   * Stock availability and delivery information.
+   * Customer ratings and written reviews.
+   * Customer-uploaded product photos and videos, subject to moderation.
+   * Related products and gift-set recommendations.
+   * Clearly displayed shipping, exchange and return policies.
+5. Shopping Cart & Checkout
+   * Mini-cart or slide-out cart showing products, quantities and total price.
+   * Customers can change quantities or remove products easily.
+   * Add to Cart without unnecessary page reloads.
+   * Guest checkout without forcing customers to create an account.
+   * Simple checkout with minimal form fields.
+   * Collect customer name, phone number, email if needed, city and complete delivery address.
+   * Clearly show product prices, discounts, delivery charges and final payable amount.
+   * Support Cash on Delivery (COD).
+   * Support JazzCash and Easypaisa advance payments where suitable integrations are available.
+   * Payment status must be verified appropriately; uploading a payment screenshot alone must not automatically confirm payment.
+   * Order confirmation page with order number and order summary.
+   * Confirmation notifications through available email, SMS or WhatsApp integrations.
+   * WhatsApp assistance for customers who need help placing an order.
+6. Customer Accounts & Support
+   * Optional customer accounts with order history and saved addresses.
+   * Guest checkout must remain available.
+   * Wishlist and recently viewed products.
+   * WhatsApp support button across the website.
+   * Contact page and frequently asked questions.
+   * Clear shipping, returns, exchanges and refund policies.
+   * Newsletter signup with customer consent and unsubscribe functionality.
+   * Customer feedback and review submission.
+   * Photo/video feedback uploads where supported.
+   * Voice-note feedback where technically supported.
+   * Customer feedback should be moderated before appearing publicly.
+7. Gift Sets & Promotions
+   * Dedicated Gift Sets category.
+   * Product bundles with clear pricing.
+   * Optional gift packaging or gift notes if offered.
+   * Discount codes and promotional campaigns.
+   * Seasonal sale banners and special offers.
+   * Display original and discounted prices clearly.
+   * Related product suggestions to encourage additional purchases.
+Part B — COCO Owner Admin Panel
+8. Admin Panel Overview
+The admin panel must be a complete business management dashboard, not just a page for viewing orders.
+   * Separate, secure owner login.
+   * Easy-to-use interface that does not require coding for routine tasks.
+   * Connected to the same database as the customer-facing website.
+   * Automatically save website orders, customer records and product information.
+   * Show business performance through summary cards, graphs and reports.
+   * Allow me to manage the store independently.
+   * Keep historical records so I can analyze business performance over months and years.
+9. Main Dashboard & Business Insights
+The dashboard should display important business information at a glance.
+   * Total sales and revenue.
+   * Total orders and new orders.
+   * Pending, processing, shipped and completed orders.
+   * Total customers and repeat customers.
+   * Total products and low-stock products.
+   * Cancelled orders, returns and refunds.
+   * Best-selling products and categories.
+   * Average order value.
+   * Sales growth compared with previous periods.
+   * Date filters for today, last 7 days, last 30 days, custom date range and yearly reports.
+   * Interactive graphs that update as new data is saved.
+   * Clear distinction between actual figures and estimated figures.
+10. Order Management
+Every order placed through the website must automatically be saved in the admin panel.
+   * Unique order ID and order date.
+   * Customer name, phone number and delivery address.
+   * Products ordered, quantities, variations and prices.
+   * Discounts, delivery charges and total order value.
+   * Payment method and payment status.
+   * Search orders by order ID, customer, date or phone number.
+   * Filter orders by status, payment method and order value.
+   * Update order statuses:
+   * New
+   * Confirmed
+   * Processing
+   * Shipped
+   * Delivered
+   * Cancelled
+   * Returned
+   * Refunded
+   * Add internal notes to orders.
+   * Record courier or tracking details where supported.
+   * Print or download invoices and packing slips.
+   * Export order records to CSV or Excel.
+   * Maintain records of cancellations, refunds and returns.
+11. Customer Database & CRM
+The system must build a customer database automatically as orders are placed.
+   * Save customer name, phone number, email if supplied and delivery addresses.
+   * Link all orders to the relevant customer profile.
+   * View each customer's complete order history.
+   * Show total orders, total spending and average order value.
+   * Record first purchase and most recent purchase dates.
+   * Identify new customers, repeat customers, high-value customers and inactive customers.
+   * Search and filter customers by name, phone number, email or purchase history.
+   * Reduce duplicate customer profiles where possible.
+   * Add internal customer notes where needed.
+   * Export customer records for permitted business reporting and marketing.
+   * Store marketing consent and opt-out status.
+   * Protect customer information and restrict access to authorized users.
+12. Product & Inventory Management
+I must be able to manage products without coding.
+   * Add, edit, duplicate and remove products.
+   * Create and manage categories.
+   * Update product names, descriptions, prices and discounts.
+   * Upload multiple images and videos for each product.
+   * Select featured product images.
+   * Manage fragrance variants and product options.
+   * Create and update Gift Sets.
+   * Assign stock quantities and track availability.
+   * Automatically update stock according to the configured order workflow.
+   * Low-stock alerts and out-of-stock indicators.
+   * Record product costs to support profit calculations.
+   * Maintain inventory adjustment records.
+   * Bulk import and export product information where supported.
+13. Sales Analytics & Reporting
+The admin panel must help me understand which products sell well and how the business is growing.
+   * Daily, weekly, monthly and yearly sales graphs.
+   * Revenue and order trends over time.
+   * Sales by product and category.
+   * Sales by fragrance or product variation.
+   * Best-selling and slow-moving products.
+   * Average order value and repeat-purchase rate.
+   * COD versus advance-payment orders.
+   * Cancellation, return and delivery-success rates where data is available.
+   * Customer purchase trends and inactive customer reports.
+   * Discount and promotion performance.
+   * Low-stock and inventory reports.
+   * Export reports to CSV or Excel.
+Financial reporting:
+   * Show gross sales, discounts, refunds and net sales separately.
+   * Calculate estimated profit using product costs and any additional expenses entered.
+   * Clearly distinguish revenue from profit.
+   * Allow comparison between different dates and reporting periods.
+14. Marketing & Customer Retention
+   * Create and manage discount codes.
+   * Manage sale banners and promotions.
+   * Track coupon usage.
+   * Manage newsletter subscribers.
+   * Segment customers based on purchase history and spending.
+   * Track abandoned carts where supported.
+   * Support abandoned-cart recovery through suitable integrations.
+   * Integrate Google Analytics and Google Search Console.
+   * Track website traffic, product views and conversions where configured.
+   * Provide useful insights to help decide which products to restock or promote.
+   * Only send marketing messages when appropriate consent has been obtained.
+15. Reviews, Feedback & Support Management
+   * View and manage customer reviews.
+   * Approve, hide or moderate reviews before publication.
+   * View customer-uploaded photos and videos.
+   * Manage voice-note feedback if implemented.
+   * Track customer complaints and support requests.
+   * Add internal notes and track resolution status.
+   * Prevent spam and inappropriate uploads.
+16. Admin Security & Data Protection
+   * Secure owner login with strong authentication.
+   * Two-factor authentication where supported.
+   * Optional staff accounts with restricted permissions in the future.
+   * Protect sensitive customer and financial information.
+   * SSL certificate and secure website configuration.
+   * Regular software and plugin updates.
+   * Activity logs for important admin actions.
+   * Automated backups and a documented recovery process.
+   * Securely export orders, products, customers and reports.
+   * Test the backup restoration process.
+   * Ensure I retain ownership and control of the domain, hosting, website data and payment accounts.
+Part C — Technical Requirements & Future Growth
+17. SEO & Performance
+   * SEO-friendly product and category pages.
+   * Search-engine-friendly URLs, page titles and meta descriptions.
+   * Product structured data where appropriate.
+   * XML sitemap and Google Search Console setup.
+   * Optimized images and efficient video loading.
+   * Fast performance on mobile internet.
+   * Responsive testing on mobile, tablet and desktop.
+   * Accessible typography, readable text and clear interactive controls.
+18. Platform, Budget & Maintenance
+   * Prefer a reliable, easy-to-manage platform.
+   * Use free or low-cost tools where practical.
+   * If using WordPress and WooCommerce, identify which features are built in and which require additional plugins or custom development.
+   * Disclose all paid plugins, hosting costs, payment gateway charges and recurring fees before development.
+   * Avoid unnecessary plugins that affect performance or security.
+   * Make routine updates possible without coding.
+   * Keep the system expandable for more products, categories, traffic, staff and payment methods.
+   * Provide a complete handover guide explaining how to manage products, process orders, update stock, export data and restore backups.
+19. Final Testing & Acceptance Checklist
+Before the website is considered complete, verify that:
+   * Customers can browse all categories on mobile and desktop.
+   * Customers can swipe through product photos and videos directly on product cards.
+   * Quick View and Quick Add to Cart work correctly.
+   * Checkout works and order details are saved accurately.
+   * The owner can find and update orders in the admin panel.
+   * Customer profiles and order histories are saved and searchable.
+   * Products, photos, videos, prices and stock can be updated through the admin panel.
+   * Dashboard graphs match the actual saved data for the selected date range.
+   * Sales and profit figures are calculated and labelled correctly.
+   * Reports can be exported.
+   * Backups and recovery procedures are tested.
+   * All paid tools, technical limitations and ongoing costs are disclosed.
+   * The website is tested on real mobile screens and common desktop browsers.
+20. Expected Final Deliverables
+The developer must provide:
+   * Complete customer-facing COCO e-commerce website.
+   * Secure owner admin panel.
+   * Configured product categories and checkout workflow.
+   * Product-card photo/video swipe functionality.
+   * Order management and customer database.
+   * Product and inventory management.
+   * Dashboard graphs and agreed business reports.
+   * Payment integrations as agreed.
+   * SEO and analytics setup.
+   * Security, backup and data-export setup.
+   * Admin access and ownership handover.
+   * Written instructions for managing the website.
+   * A list of included features, paid plugins, limitations and ongoing costs.
+Final Goal
+COCO needs a premium customer shopping experience and a powerful owner-controlled business dashboard. Customers should be able to discover products, preview media, add items to their cart and place orders easily. Meanwhile, I should be able to manage the entire business from one admin panel, with all order and customer records saved reliably and useful graphs and insights generated as the store grows.
+Important: Advanced features such as custom analytics, profit reporting, abandoned-cart recovery, swipeable video galleries, voice-note feedback and some payment integrations may require paid plugins or custom development. The developer must confirm the implementation approach and cost before starting work.
+
+
+
+
+Competitor:
+
+
+   1. https://fieaura.com/
+   2. https://www.colishco.com/?srsltid=AYCX9vK-RQYMfwCodsCGHygUh8QZIPdgBfW3UkM47cVPERYIAAIvzwXs
+Some samples:

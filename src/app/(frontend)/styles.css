@@ -1,0 +1,96 @@
+@import 'tailwindcss';
+
+/*
+ * COCO brand tokens, taken from the packaging/brand board supplied by the client.
+ * Burgundy = primary, blush/nude = surfaces, cream = background, gold = accent.
+ * Contrast: ink and burgundy-700 on cream-50 both pass WCAG AA for body text.
+ */
+@theme {
+  --color-burgundy-900: #4a1620;
+  --color-burgundy-700: #6b1f2a;
+  --color-burgundy-500: #8e3a45;
+  --color-rose-400: #c99485;
+  /* Rose for small text: rose-400 is too pale to read on cream (decorative icons only). */
+  --color-rose-600: #8f5344;
+  --color-blush-200: #e9cfc2;
+  --color-nude-100: #f3e3d8;
+  --color-cream-50: #faf4ee;
+  --color-gold-500: #b8945a;
+  --color-ink: #2b1a1c;
+  --color-muted: #6e5a5c;
+  --color-success: #2f6b3a;
+  --color-danger: #a3262f;
+
+  --font-display: var(--font-cormorant), 'Cormorant Garamond', Georgia, serif;
+  --font-sans: var(--font-jost), 'Jost', system-ui, sans-serif;
+
+  --tracking-brand: 0.3em;
+
+  --shadow-card: 0 1px 2px rgb(74 22 32 / 0.06), 0 8px 24px -12px rgb(74 22 32 / 0.18);
+  --shadow-drawer: 0 0 48px rgb(43 26 28 / 0.25);
+
+  --animate-slide-in-right: slide-in-right 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-slide-in-left: slide-in-left 280ms cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-fade-in: fade-in 200ms ease-out;
+  --animate-pop-in: pop-in 220ms cubic-bezier(0.32, 0.72, 0, 1);
+
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes slide-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-cream-50 font-sans text-ink;
+  }
+
+  h1,
+  h2,
+  h3 {
+    @apply font-display font-medium tracking-wide;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-burgundy-700;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 1ms !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Leaves room for the mobile tab bar and the iOS home indicator. */
+@utility pb-tabbar {
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+}

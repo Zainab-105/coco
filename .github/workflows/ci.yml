@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: coco_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      PAYLOAD_SECRET: ci-only-secret-not-used-anywhere-else
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/coco_test
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/coco_test
+      NEXT_PUBLIC_SERVER_URL: http://localhost:3000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Security advisories (high or critical, production dependencies)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:int
+
+      - name: Migrations are up to date
+        # Fails if the collections changed without a committed migration.
+        run: |
+          npx payload migrate:create ci-check --skip-empty
+          if [ -n "$(git status --porcelain src/migrations)" ]; then
+            echo "::error::Schema changed without a migration. Run 'npx payload migrate:create <name>' and commit it."
+            git status --porcelain src/migrations
+            exit 1
+          fi
+
+      - name: Production build (applies migrations to a fresh database)
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/coco_build
+          SITE_INDEXABLE: '1'
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c 'CREATE DATABASE coco_build'
+          npm run build
+
+      - name: Serve the production build with the sample catalogue
+        env:
+          NODE_ENV: production
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/coco_build
+          SEED_SAMPLE: '1'
+        run: |
+          npx payload run src/seed/index.ts
+          nohup npm start > server.log 2>&1 &
+          npx --yes wait-on@8 --timeout 120000 http://localhost:3000/api/health
+
+      - name: Performance budget (JavaScript per page)
+        run: npm run budget
+
+      - name: Lighthouse (performance, accessibility, SEO)
+        run: npx --yes @lhci/cli@0.15.1 autorun
+
+      - name: Backup and restore drill
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/coco_build
+          NODE_ENV: production
+          DEV_OWNER_PASSWORD: ci-only-password-1!
+        run: |
+          # The drill checks for an admin user, which the sample seed does not create.
+          npx payload run src/seed/devOwner.ts
+          # pg_dump must match the Postgres 17 service; the runner's default client is older.
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-17
+          export PG_BIN=/usr/lib/postgresql/17/bin
+          npm run backup -- --file coco.dump
+          npm run restore:drill -- --file coco.dump
+
