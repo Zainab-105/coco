@@ -29,6 +29,7 @@ export default async function CheckoutPage() {
         giftWrap={{ enabled: Boolean(store.giftWrap?.enabled), price: store.giftWrap?.price ?? 0 }}
         deliveryEstimate={settings.shipping.deliveryEstimate}
         whatsappNumber={settings.whatsappNumber}
+        transferInstructions={store.payments?.manualTransferInstructions ?? undefined}
       />
     </Container>
   )

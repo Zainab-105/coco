@@ -92,7 +92,7 @@ export const StoreSettings: GlobalConfig = {
                   type: 'textarea',
                   admin: {
                     description:
-                      'Shown when a gateway is not yet live. Orders stay "Awaiting verification" until confirmed manually.',
+                      'Your real bank or wallet details: account title, number, IBAN. Leave empty to hide this payment option. Customers see this text at checkout, on their order page and in their email. Orders stay "Awaiting verification" until you confirm the money arrived.',
                   },
                 },
               ],

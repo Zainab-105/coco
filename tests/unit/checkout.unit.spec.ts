@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import { computeQuote, type CatalogProduct, type CouponData, type QuoteSettings } from '@/lib/checkout/quote'
 import { validateCheckout } from '@/lib/checkout/validate'
+import { orderConfirmationEmail } from '@/lib/email/templates'
+import type { Order } from '@/payload-types'
 
 const settings: QuoteSettings = {
   flatRate: 250,
@@ -158,5 +160,20 @@ describe('validateCheckout', () => {
     const { data, errors } = validateCheckout({ fullName: 'A', phone: '123', email: 'bad', city: '', address: 'short', paymentMethod: 'bitcoin' })
     expect(data).toBeUndefined()
     expect(Object.keys(errors).sort()).toEqual(['address', 'city', 'email', 'fullName', 'paymentMethod', 'phone'])
+  })
+})
+
+describe('order confirmation email', () => {
+  const order = (method: string) =>
+    ({ orderNumber: 'COCO-1', total: 1840, items: [], email: 'a@b.test', accessToken: 't', shippingAddress: { fullName: 'A', city: 'Lahore', address: 'X', phone: '+923001234567' }, payment: { method } }) as unknown as Order
+
+  it('tells a transfer customer where to pay, safely escaped', () => {
+    const { html, text } = orderConfirmationEmail(order('bank_transfer'), 'Bank: <b>Test</b>\nAccount: 0123')
+    expect(html).toContain('Bank: &lt;b&gt;Test&lt;/b&gt;<br>Account: 0123')
+    expect(text).toContain('Account: 0123')
+  })
+
+  it('leaves account details out of other payment methods', () => {
+    expect(orderConfirmationEmail(order('cod'), 'Account: 0123').html).not.toContain('0123')
   })
 })

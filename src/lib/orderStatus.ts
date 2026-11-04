@@ -18,7 +18,7 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   cod: 'Cash on Delivery',
   jazzcash: 'JazzCash',
   easypaisa: 'Easypaisa',
-  bank_transfer: 'Bank transfer',
+  bank_transfer: 'Bank or wallet transfer',
 }
 
 export const PAYMENT_STATUSES = ['pending', 'awaiting_verification', 'paid', 'failed', 'refunded'] as const

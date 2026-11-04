@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test'
-import { login } from '../helpers/login'
+import { BASE, login } from '../helpers/login'
 import { seedTestUser, cleanupTestUser, testUser } from '../helpers/seedUser'
 
 test.describe('Admin Panel', () => {
@@ -19,35 +19,35 @@ test.describe('Admin Panel', () => {
   })
 
   test('can navigate to dashboard', async () => {
-    await page.goto('http://localhost:3000/admin')
-    await expect(page).toHaveURL('http://localhost:3000/admin')
+    await page.goto(`${BASE}/admin`)
+    await expect(page).toHaveURL(`${BASE}/admin`)
     const dashboardArtifact = page.locator('span[title="Dashboard"]').first()
     await expect(dashboardArtifact).toBeVisible()
   })
 
   test('can navigate to list view', async () => {
-    await page.goto('http://localhost:3000/admin/collections/users')
-    await expect(page).toHaveURL('http://localhost:3000/admin/collections/users')
+    await page.goto(`${BASE}/admin/collections/users`)
+    await expect(page).toHaveURL(`${BASE}/admin/collections/users`)
     const listViewArtifact = page.locator('h1', { hasText: 'Users' }).first()
     await expect(listViewArtifact).toBeVisible()
   })
 
   test('can navigate to edit view', async () => {
-    await page.goto('http://localhost:3000/admin/collections/users/create')
+    await page.goto(`${BASE}/admin/collections/users/create`)
     await expect(page).toHaveURL(/\/admin\/collections\/users\/[a-zA-Z0-9-_]+/)
     const editViewArtifact = page.locator('input[name="email"]')
     await expect(editViewArtifact).toBeVisible()
   })
 
   test('dashboard shows the last 30 days with a comparison', async () => {
-    await page.goto('http://localhost:3000/admin')
+    await page.goto(`${BASE}/admin`)
     await expect(page.getByText('Last 30 days')).toBeVisible()
     await expect(page.getByRole('img', { name: 'Net sales per day, last 30 days' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'Open reports' })).toBeVisible()
   })
 
   test('dashboard offers today, yearly and custom dates, with store totals', async () => {
-    await page.goto('http://localhost:3000/admin?period=ytd')
+    await page.goto(`${BASE}/admin?period=ytd`)
     await expect(page.getByRole('heading', { name: 'This year' })).toBeVisible()
     await expect(page.getByRole('img', { name: 'Net sales per week, this year' })).toBeVisible()
     await expect(page.getByRole('link', { name: /Total customers/ })).toBeVisible()
@@ -65,7 +65,7 @@ test.describe('Admin Panel', () => {
   })
 
   test('reports group by year and suggest what to restock', async () => {
-    await page.goto('http://localhost:3000/admin/reports?range=ytd&compare=none')
+    await page.goto(`${BASE}/admin/reports?range=ytd&compare=none`)
     await page.getByLabel('Group by').selectOption('year')
     await expect(page).toHaveURL(/group=year/)
     await expect(page.getByLabel('Group by')).toHaveValue('year')
@@ -78,16 +78,16 @@ test.describe('Admin Panel', () => {
   })
 
   test('reviews and support tickets have status queues', async () => {
-    await page.goto('http://localhost:3000/admin/collections/reviews')
+    await page.goto(`${BASE}/admin/collections/reviews`)
     await expect(page.getByRole('navigation', { name: 'Filter by status' }).getByRole('link', { name: /Pending/ })).toBeVisible()
-    await page.goto('http://localhost:3000/admin/collections/support-tickets')
+    await page.goto(`${BASE}/admin/collections/support-tickets`)
     await expect(page.getByRole('navigation', { name: 'Filter by status' }).getByRole('link', { name: /In progress/ })).toBeVisible()
-    await page.goto('http://localhost:3000/admin')
+    await page.goto(`${BASE}/admin`)
     await expect(page.getByRole('link', { name: /Reviews to moderate/ })).toBeVisible()
   })
 
   test('reports switch tabs and ranges', async () => {
-    await page.goto('http://localhost:3000/admin/reports?range=90d&compare=previous')
+    await page.goto(`${BASE}/admin/reports?range=90d&compare=previous`)
     await expect(page.locator('h1', { hasText: 'Reports' })).toBeVisible()
     await expect(page.getByRole('img', { name: 'Net sales over time' })).toBeVisible()
     await expect(page.getByText('Sales by product').first()).toBeVisible()

@@ -76,8 +76,6 @@ export async function seedBase(payload: Payload): Promise<SeededBase> {
         payments: {
           codEnabled: true,
           codMaxOrderValue: 25000,
-          manualTransferInstructions:
-            'Send the order total to the JazzCash / Easypaisa account shown after checkout and share the transaction ID. Your order is confirmed once we verify the payment.',
         },
         giftWrap: { enabled: true, price: 150 },
         faqs: [

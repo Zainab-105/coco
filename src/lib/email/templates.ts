@@ -42,7 +42,7 @@ ${line('Total', formatPKR(o.total ?? 0), true)}</table>`
 const button = (href: string, label: string) =>
   `<p style="margin:24px 0"><a href="${esc(href)}" style="background:#6b1f2a;color:#faf4ee;padding:14px 24px;text-decoration:none;font-size:13px;letter-spacing:2px;text-transform:uppercase">${esc(label)}</a></p>`
 
-export function orderConfirmationEmail(o: Order) {
+export function orderConfirmationEmail(o: Order, transferInstructions?: string | null) {
   const method = PAYMENT_METHOD_LABELS[o.payment.method]
   const next =
     o.payment.method === 'cod'
@@ -50,15 +50,17 @@ export function orderConfirmationEmail(o: Order) {
       : o.payment.method === 'bank_transfer'
         ? 'Your order will be confirmed once we verify your payment.'
         : 'Your order is confirmed as soon as your payment is received.'
+  const transfer = o.payment.method === 'bank_transfer' ? transferInstructions?.trim() : undefined
   const body = `<p style="font-size:14px;line-height:1.6">Hi ${esc(o.shippingAddress.fullName)}, thank you for your order <strong>${esc(o.orderNumber)}</strong>.</p>
 <p style="font-size:14px;line-height:1.6">${next}</p>
+${transfer ? `<p style="font-size:14px;line-height:1.6;border-left:2px solid #b8945a;padding-left:12px"><strong>Pay ${esc(formatPKR(o.total ?? 0))} to:</strong><br>${esc(transfer).replace(/\n/g, '<br>')}</p>` : ''}
 ${itemsTable(o)}
 <p style="font-size:14px;line-height:1.6;margin-top:16px"><strong>Payment:</strong> ${esc(method)}<br><strong>Deliver to:</strong> ${esc(o.shippingAddress.fullName)}, ${esc(o.shippingAddress.address)}, ${esc(o.shippingAddress.city)}</p>
 ${button(orderUrl(o), 'View your order')}`
   return {
     subject: `Your COCO order ${o.orderNumber}`,
     html: layout('Thank you for your order', body),
-    text: `Thank you for your order ${o.orderNumber}. Total ${formatPKR(o.total ?? 0)} (${method}). ${next} View it at ${orderUrl(o)}`,
+    text: `Thank you for your order ${o.orderNumber}. Total ${formatPKR(o.total ?? 0)} (${method}). ${next}${transfer ? ` Pay to: ${transfer}.` : ''} View it at ${orderUrl(o)}`,
   }
 }
 

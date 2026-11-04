@@ -9,6 +9,7 @@ Storefront and owner admin panel for **COCO**: car scents, room diffusers, car a
 - Live UI kit: `/design-system` (noindex) once `npm run dev` is running
 - Client requirements (source): [`docs/client-requirements.txt`](docs/client-requirements.txt)
 - Brand references: [`docs/brand/`](docs/brand)
+- Client documents (launch checklist, owner's manual, features and costs, account register): [`docs/client/`](docs/client)
 
 ## Stack
 

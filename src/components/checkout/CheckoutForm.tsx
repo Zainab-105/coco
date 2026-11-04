@@ -47,10 +47,12 @@ export function CheckoutForm({
   giftWrap,
   deliveryEstimate,
   whatsappNumber,
+  transferInstructions,
 }: {
   giftWrap: { enabled: boolean; price: number }
   deliveryEstimate: string
   whatsappNumber?: string
+  transferInstructions?: string
 }) {
   const router = useRouter()
   const lines = useCart()
@@ -372,6 +374,13 @@ export function CheckoutForm({
                 </span>
               </label>
             ))}
+            {paymentMethod === 'bank_transfer' && transferInstructions && (
+              <div className="border-l-2 border-gold-500 bg-white px-4 py-3 text-sm">
+                <p className="font-medium">Pay {formatPKR(total)} to:</p>
+                <p className="mt-1 whitespace-pre-line">{transferInstructions}</p>
+                <p className="mt-2 text-muted">Place your order first, then enter your transaction ID on the next page.</p>
+              </div>
+            )}
             {errors.paymentMethod && <p className="text-xs text-danger">{errors.paymentMethod}</p>}
           </fieldset>
         </Section>

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type APIRequestContext } from '@playwright/test'
 import { getPayload } from 'payload'
 import sharp from 'sharp'
 
@@ -20,8 +20,30 @@ const contactName = `E2E Contact ${run}`
 const email = `e2e-${run}@example.com`
 const client = () => getPayload({ config })
 
+// Pages are cached in production and only the running server can refresh them, so changes that
+// must show on a page go through its API, as they do from the admin panel.
+const owner = { email: `e2e-owner-${run}@example.com`, password: `E2e-owner-${run}!` }
+let ownerToken = ''
+const asOwner = { headers: () => ({ Authorization: `JWT ${ownerToken}` }) }
+
+test.beforeAll(async ({ request }) => {
+  const payload = await client()
+  await payload.create({ collection: 'users', data: { ...owner, roles: ['owner'] } })
+  const login = await request.post('/api/users/login', { data: owner })
+  ownerToken = (await login.json()).token
+})
+
+const setTransferDetails = async (request: APIRequestContext, payments: Record<string, unknown> | null | undefined, manualTransferInstructions?: string) => {
+  const response = await request.post('/api/globals/store-settings', {
+    headers: asOwner.headers(),
+    data: { payments: { ...payments, ...(manualTransferInstructions === undefined ? {} : { manualTransferInstructions }) } },
+  })
+  expect(response.ok()).toBe(true)
+}
+
 test.afterAll(async () => {
   const payload = await client()
+  await payload.delete({ collection: 'users', where: { email: { equals: owner.email } } })
   await payload.delete({ collection: 'reviews', where: { authorName: { equals: author } } })
   await payload.delete({ collection: 'support-tickets', where: { name: { equals: contactName } } })
   await payload.delete({ collection: 'customer-accounts', where: { email: { equals: email } } })
@@ -50,14 +72,15 @@ test('a review stays hidden, with a private photo, until staff approve it', asyn
   expect(docs).toHaveLength(1)
   expect(docs[0]).toMatchObject({ status: 'pending', verifiedPurchase: false })
   const upload = docs[0].attachments![0] as { url: string }
-  const path = new URL(upload.url, 'http://localhost:3000').pathname
+  const path = new URL(upload.url, 'http://coco.test').pathname
 
   // Anonymous visitors cannot fetch the file or see the review yet.
   expect((await request.get(path)).status()).toBeGreaterThanOrEqual(400)
   await page.reload()
   await expect(page.getByText(author)).toHaveCount(0)
 
-  await payload.update({ collection: 'reviews', id: docs[0].id, data: { status: 'approved' } })
+  const approved = await request.patch(`/api/reviews/${docs[0].id}`, { headers: asOwner.headers(), data: { status: 'approved' } })
+  expect(approved.ok()).toBe(true)
   expect((await request.get(path)).status()).toBe(200)
   await page.goto('/products/smokeless-car-ashtray')
   await expect(page.getByText(author)).toBeVisible()
@@ -108,6 +131,47 @@ test('an autofilled hidden field does not lose a complaint or a review', async (
   await expect(page.getByText(/Your review will appear here/)).toBeVisible({ timeout: 30_000 })
   const reviews = await payload.find({ collection: 'reviews', where: { and: [{ authorName: { equals: author } }, { status: { equals: 'pending' } }] } })
   expect(reviews.docs).toHaveLength(1)
+})
+
+test('a transfer customer sees where to pay before and after ordering', async ({ page, request }) => {
+  const payload = await client()
+  const before = await payload.findGlobal({ slug: 'store-settings', depth: 0 })
+  const details = `Bank: E2E Test Bank\nAccount number: ${run}`
+  await setTransferDetails(request, before.payments, details)
+  try {
+    await page.goto('/products/smokeless-car-ashtray')
+    await page.getByRole('button', { name: 'Add to cart' }).first().click()
+    await page.getByRole('dialog', { name: /Your cart/ }).getByRole('link', { name: 'Checkout' }).click()
+    await page.getByLabel('Full name').fill('Transfer Tester')
+    await page.getByLabel('Mobile number').fill(`0302${String(run).slice(-7)}`)
+    await page.getByLabel('City').fill('Lahore')
+    await page.getByLabel('Complete address').fill('House 3, Street 3, Model Town')
+
+    await expect(page.getByText(`Account number: ${run}`)).toHaveCount(0)
+    await page.getByRole('radio', { name: /Bank or wallet transfer/ }).check({ force: true })
+    await expect(page.getByText(`Account number: ${run}`)).toBeVisible()
+
+    await page.getByRole('button', { name: /Place order/ }).click()
+    await expect(page).toHaveURL(/\/order\/COCO-/, { timeout: 30_000 })
+    await expect(page.getByText(`Account number: ${run}`)).toBeVisible()
+    await expect(page.getByLabel('Transaction ID')).toBeVisible()
+  } finally {
+    await setTransferDetails(request, before.payments)
+  }
+})
+
+test('with no account details, the transfer option cannot be chosen', async ({ page, request }) => {
+  const payload = await client()
+  const before = await payload.findGlobal({ slug: 'store-settings', depth: 0 })
+  await setTransferDetails(request, before.payments, '')
+  try {
+    await page.goto('/products/smokeless-car-ashtray')
+    await page.getByRole('button', { name: 'Add to cart' }).first().click()
+    await page.getByRole('dialog', { name: /Your cart/ }).getByRole('link', { name: 'Checkout' }).click()
+    await expect(page.getByRole('radio', { name: /Bank or wallet transfer/ })).toBeDisabled()
+  } finally {
+    await setTransferDetails(request, before.payments)
+  }
 })
 
 test('sign in with an emailed code, save details, use them at checkout, sign out', async ({ page }) => {

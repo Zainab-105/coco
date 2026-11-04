@@ -5,9 +5,13 @@ import { orderConfirmationEmail, orderDeliveredEmail, orderShippedEmail } from '
 
 export async function sendOrderEmail(payload: Payload, order: Order, kind: 'confirmation' | 'shipped' | 'delivered') {
   if (!order.email) return
-  const message =
-    kind === 'confirmation' ? orderConfirmationEmail(order) : kind === 'shipped' ? orderShippedEmail(order) : orderDeliveredEmail(order)
   try {
+    const transferInstructions =
+      kind === 'confirmation' && order.payment.method === 'bank_transfer'
+        ? (await payload.findGlobal({ slug: 'store-settings', depth: 0 })).payments?.manualTransferInstructions
+        : undefined
+    const message =
+      kind === 'confirmation' ? orderConfirmationEmail(order, transferInstructions) : kind === 'shipped' ? orderShippedEmail(order) : orderDeliveredEmail(order)
     await payload.sendEmail({ to: order.email, ...message })
   } catch (error) {
     // Email problems must never block order processing.
