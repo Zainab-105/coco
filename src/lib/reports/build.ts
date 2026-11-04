@@ -6,9 +6,14 @@ import {
   expensesByCategory,
   inventoryReport,
   paymentMix,
+  PROMOTE_OVER_DAYS,
+  RESTOCK_WITHIN_DAYS,
+  restockReason,
   salesBreakdown,
   slowSellers,
   statusFunnel,
+  stockInsights,
+  stockLabel,
   timeSeries,
   topCities,
   type Kpis,
@@ -30,6 +35,7 @@ export type ReportInput = {
 export function buildReport(input: ReportInput) {
   const { range, orders, lookups } = input
   const previous = range.previous
+  const inventory = inventoryReport(orders, lookups.products, range)
   return {
     range,
     kpis: computeKpis(orders, input.expenses, range),
@@ -42,7 +48,8 @@ export function buildReport(input: ReportInput) {
     payments: paymentMix(orders),
     coupons: couponPerformance(orders, lookups.couponCodes),
     cities: topCities(orders),
-    inventory: inventoryReport(orders, lookups.products, range),
+    inventory,
+    insights: stockInsights(inventory.rows),
     expenses: expensesByCategory(input.expenses),
   }
 }
@@ -93,7 +100,7 @@ export function financeRows(k: Kpis) {
     { label: 'Gift wrap', value: k.giftWrap, note: '' },
     { label: 'Total collected', value: k.totalCollected, note: 'What customers paid on revenue orders', strong: true },
     { label: 'Cost of goods', value: -k.costOfGoods, note: 'Cost price saved on each order line' },
-    { label: 'Expenses', value: -k.expenses, note: 'Recorded under Reports > Expenses' },
+    { label: 'Expenses', value: -k.expenses, note: 'Recorded under Finance > Expenses' },
     { label: 'Estimated profit', value: k.estimatedProfit, note: 'Estimate: excludes costs not recorded as expenses', strong: true },
   ]
 }
@@ -159,11 +166,39 @@ export function reportTables(report: Report) {
       },
       (col) => [
         col('Product', 'text', (r) => r.title),
-        col('Status', 'text', (r) => r.status),
+        col('Status', 'text', (r) => stockLabel(r)),
         col('In stock', 'number', (r) => r.stock),
         col('Sold in period', 'number', (r) => r.unitsSold),
         col('Days of cover', 'number', (r) => r.daysOfCover),
         col('Stock value (cost)', 'money', (r) => r.stockValue),
+      ],
+    ),
+    restock: table(
+      report.insights.restock,
+      {
+        title: 'Consider restocking',
+        description: `Selling, and low or out of stock, or with ${RESTOCK_WITHIN_DAYS} days of stock or less at this period's sales. A suggestion: most useful over 30 days or more.`,
+        managerOnly: true,
+      },
+      (col) => [
+        col('Product', 'text', (r) => r.title),
+        col('Why', 'text', (r) => restockReason(r)),
+        col('In stock', 'number', (r) => r.stock),
+        col('Sold in period', 'number', (r) => r.unitsSold),
+      ],
+    ),
+    promote: table(
+      report.insights.promote,
+      {
+        title: 'Consider promoting',
+        description: `Live products that sold nothing, or have over ${PROMOTE_OVER_DAYS} days of stock at this period's sales. A suggestion: most useful over 30 days or more.`,
+        managerOnly: true,
+      },
+      (col) => [
+        col('Product', 'text', (r) => r.title),
+        col('In stock', 'number', (r) => r.stock),
+        col('Sold in period', 'number', (r) => r.unitsSold),
+        col('Days of cover', 'number', (r) => r.daysOfCover),
       ],
     ),
     finance: table(financeRows(report.kpis), { title: 'Finance summary', description: 'All figures in PKR. Profit is an estimate.', managerOnly: true }, (col) => [

@@ -70,7 +70,7 @@ Assumptions referenced as A1-A19 are listed in [../ASSUMPTIONS.md](../ASSUMPTION
 ### 5.3 Product card (built: `ProductCard`)
 - 4:5 media area, swipeable; dots always shown when more than one item; arrows on desktop hover; videos autoplay muted only while visible.
 - Badges top-left: sale %, New, Sold out. Wishlist heart top-right.
-- Mobile: round "+" quick-add. Desktop: "Add to cart" (or "Choose fragrance") + Quick View eye, revealed on hover/focus.
+- Mobile: round Quick View eye (bottom left) and "+" quick-add (bottom right). Desktop: "Add to cart" (or "Choose fragrance") + Quick View eye, revealed on hover/focus.
 - Below: category/mood eyebrow, name, fragrance swatches (when multiple), price with strikethrough, stock line.
 - Quick add on a product that needs a fragrance opens Quick View instead of adding a random variant.
 

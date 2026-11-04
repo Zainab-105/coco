@@ -46,6 +46,37 @@ test.describe('Admin Panel', () => {
     await expect(page.getByRole('link', { name: 'Open reports' })).toBeVisible()
   })
 
+  test('dashboard offers today, yearly and custom dates, with store totals', async () => {
+    await page.goto('http://localhost:3000/admin?period=ytd')
+    await expect(page.getByRole('heading', { name: 'This year' })).toBeVisible()
+    await expect(page.getByRole('img', { name: 'Net sales per week, this year' })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Total customers/ })).toBeVisible()
+    await expect(page.getByRole('link', { name: /Live products/ })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Top categories' })).toBeVisible()
+
+    await page.getByRole('link', { name: 'Today', exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible()
+
+    await page.getByLabel('From').fill('2026-01-01')
+    await page.getByLabel('To', { exact: true }).fill('2026-03-31')
+    await page.getByRole('button', { name: 'Apply' }).click()
+    await expect(page).toHaveURL(/period=custom/)
+    await expect(page.getByRole('heading', { name: '1 Jan 2026 – 31 Mar 2026' })).toBeVisible()
+  })
+
+  test('reports group by year and suggest what to restock', async () => {
+    await page.goto('http://localhost:3000/admin/reports?range=ytd&compare=none')
+    await page.getByLabel('Group by').selectOption('year')
+    await expect(page).toHaveURL(/group=year/)
+    await expect(page.getByLabel('Group by')).toHaveValue('year')
+    await expect(page.getByRole('img', { name: 'Net sales over time' })).toContainText('2026')
+
+    await page.getByRole('link', { name: 'Inventory' }).click()
+    await expect(page).toHaveURL(/group=year/)
+    await expect(page.getByText('Consider restocking')).toBeVisible()
+    await expect(page.getByText('Consider promoting')).toBeVisible()
+  })
+
   test('reviews and support tickets have status queues', async () => {
     await page.goto('http://localhost:3000/admin/collections/reviews')
     await expect(page.getByRole('navigation', { name: 'Filter by status' }).getByRole('link', { name: /Pending/ })).toBeVisible()

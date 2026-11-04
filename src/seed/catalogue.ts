@@ -8,12 +8,20 @@ import { richText } from './richText'
  * Sample catalogue for design, demos and testing. Uses crops of the client's brand boards
  * (public/mock) as stand-in photography. Prices and stock are illustrative only (A11).
  */
-const mockImage = (name: string) => path.resolve('public/mock', `${name}.webp`)
+const mockFile = (name: string, extension = 'webp') => path.resolve('public/mock', `${name}.${extension}`)
 
 async function ensureMedia(payload: Payload, file: string, alt: string): Promise<number> {
   const found = await payload.find({ collection: 'media', where: { alt: { equals: alt } }, limit: 1, depth: 0 })
   if (found.docs[0]) return found.docs[0].id
-  return (await payload.create({ collection: 'media', data: { alt }, filePath: mockImage(file), depth: 0 })).id
+  return (await payload.create({ collection: 'media', data: { alt }, filePath: mockFile(file), depth: 0 })).id
+}
+
+/** A short placeholder clip, so swiping to a video on product cards can be seen and tested. */
+async function ensureSampleVideo(payload: Payload, poster: number): Promise<number> {
+  const alt = 'COCO sample product video'
+  const found = await payload.find({ collection: 'media', where: { alt: { equals: alt } }, limit: 1, depth: 0 })
+  if (found.docs[0]) return found.docs[0].id
+  return (await payload.create({ collection: 'media', data: { alt, poster }, filePath: mockFile('sample-video', 'webm'), depth: 0 })).id
 }
 
 const labelFile: Record<string, string> = {
@@ -59,6 +67,7 @@ export async function seedCatalogue(payload: Payload, { categoryIds, fragranceId
   for (const [slug, file] of Object.entries(labelFile)) {
     labels[slug] = await ensureMedia(payload, file, `${fragranceNames[slug]} fragrance label`)
   }
+  const video = await ensureSampleVideo(payload, media.bottle)
   const fragranceSlugs = Object.keys(labelFile)
   const allFragrances = fragranceSlugs.map((s) => fragranceIds[s])
 
@@ -88,7 +97,7 @@ export async function seedCatalogue(payload: Payload, { categoryIds, fragranceId
           { label: 'Material', value: 'Glass bottle, wooden cap, braided cord' },
           { label: 'Usage', value: 'Hang on rear-view mirror' },
         ],
-        gallery: [media.bottle, ...fragranceSlugs.map((s) => labels[s])].map((m) => ({ media: m })),
+        gallery: [media.bottle, video, ...fragranceSlugs.map((s) => labels[s])].map((m) => ({ media: m })),
         fragrances: allFragrances,
         variants: fragranceSlugs.map((s) => ({
           label: fragranceNames[s],
@@ -169,6 +178,14 @@ export async function seedCatalogue(payload: Payload, { categoryIds, fragranceId
   const ids: Record<string, number> = {}
   for (const p of products) {
     ids[p.slug] = (await ensure(payload, 'products', { slug: { equals: p.slug } }, { ...p.data, slug: p.slug })).id
+  }
+
+  // Databases seeded before the sample video existed get it on the next seed.
+  const diffuser = await payload.findByID({ collection: 'products', id: ids['hanging-car-diffuser'], depth: 0 })
+  const gallery = diffuser.gallery ?? []
+  if (!gallery.some((g) => g.media === video)) {
+    const [first, ...rest] = gallery.map((g) => ({ media: g.media }))
+    await payload.update({ collection: 'products', id: diffuser.id, data: { gallery: [first, { media: video }, ...rest].filter(Boolean) }, depth: 0 })
   }
 
   const bundles = [

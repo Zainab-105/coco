@@ -64,7 +64,7 @@ export function ProductCard({
           </span>
         </button>
 
-        {/* Desktop: actions slide up on hover. Mobile: compact quick-add button. */}
+        {/* Desktop: actions slide up on hover. Mobile: compact quick-view and quick-add buttons. */}
         <div className="absolute inset-x-2 bottom-6 hidden translate-y-2 gap-2 opacity-0 transition-all group-hover/card:translate-y-0 group-hover/card:opacity-100 focus-within:translate-y-0 focus-within:opacity-100 md:flex">
           <button
             type="button"
@@ -83,6 +83,16 @@ export function ProductCard({
             <Eye size={18} />
           </button>
         </div>
+        <button
+          type="button"
+          onClick={() => onQuickView?.(product)}
+          aria-label={`Quick view ${product.title}`}
+          className="absolute bottom-5 left-1 flex size-11 items-center justify-center md:hidden"
+        >
+          <span className="flex size-8 items-center justify-center rounded-full bg-cream-50/90 text-ink shadow-card">
+            <Eye size={16} />
+          </span>
+        </button>
         {!soldOut && (
           <button
             type="button"

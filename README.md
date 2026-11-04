@@ -103,7 +103,7 @@ On first visit to `/admin`, create the owner account. Environments, migrations, 
 | --- | --- |
 | Work queue (new orders, payments to verify, to ship, abandoned carts, low stock) and last-30-days KPIs | Admin dashboard |
 | Sales, customer, marketing, finance and inventory reports with date presets, custom range and comparison | Reports (`/admin/reports`); each table has "Download CSV" |
-| Record ads, packaging, courier bills (used in estimated profit) | Reports > Expenses |
+| Record ads, packaging, courier bills (used in estimated profit) | Finance > Expenses |
 | Follow up an abandoned checkout | Marketing > Abandoned carts > open one > "WhatsApp" / "Mark contacted" |
 | Newsletter list (export includes each person's unsubscribe link) | Marketing > Subscribers > "Export CSV" |
 | Moderate reviews | Reviews: status tabs show the queue; open one > "Approve" / "Hide" / "Spam". Approving makes its photos and videos public |
@@ -116,7 +116,7 @@ On first visit to `/admin`, create the owner account. Environments, migrations, 
 | Confirm / pack / ship / deliver / cancel an order | Buttons at the top of an order (shipping asks for the tracking number) |
 | Invoices and packing slips | Order screen, or tick several orders in the list and use "Print invoices" / "Packing slips" |
 | Export to Excel | "Export CSV" above Orders, Customers or Products (respects the current filters; cost columns for managers/owner only) |
-| Restock, damage, stock count correction | Inventory Adjustments > Create (variant products need the variant SKU) |
+| Restock, damage, stock count correction | Stock adjustments > Create (variant products need the variant SKU) |
 | Bulk price and stock update | Products > "Bulk update prices & stock" (export, edit, upload, preview, apply) |
 | Merge duplicate customers | Customer screen > "Merge duplicate" |
 

@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
-import { niceMax, shortDate } from './chartScale'
+import type { Granularity } from '@/lib/reports/range'
+
+import { niceMax, periodLabel } from './chartScale'
 
 export type InsightPoint = { key: string; values: Record<string, number>; previous?: Record<string, number> }
 export type InsightMetric = { key: string; label: string; kind: 'money' | 'count' }
@@ -18,7 +20,19 @@ const count = (n: number) => Math.round(n).toLocaleString('en-PK')
  * Line chart measured in real pixels, so its text stays the same size at any width. Hover, touch or
  * use the arrow keys to read a day. With several metrics, tabs switch between them.
  */
-export function InsightChart({ label, points, metrics, previousLabel }: { label: string; points: InsightPoint[]; metrics: InsightMetric[]; previousLabel?: string }) {
+export function InsightChart({
+  label,
+  points,
+  metrics,
+  previousLabel,
+  granularity,
+}: {
+  label: string
+  points: InsightPoint[]
+  metrics: InsightMetric[]
+  previousLabel?: string
+  granularity?: Granularity
+}) {
   const box = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(760)
   const [metricKey, setMetricKey] = useState(metrics[0].key)
@@ -101,7 +115,7 @@ export function InsightChart({ label, points, metrics, previousLabel }: { label:
           {points.map((p, i) =>
             i % every === 0 ? (
               <text key={p.key} x={x(i)} y={HEIGHT - 8} textAnchor="middle" className="coco-chart__axis">
-                {shortDate(p.key)}
+                {periodLabel(p.key, granularity)}
               </text>
             ) : null,
           )}
@@ -120,7 +134,7 @@ export function InsightChart({ label, points, metrics, previousLabel }: { label:
         {empty && <p className="coco-chart__empty">No {metric.label.toLowerCase()} in this period yet</p>}
         {tip && hover !== null && (
           <div className="coco-chart__tip" style={{ left: tipLeft }} role="status">
-            <span>{shortDate(tip.key)}</span>
+            <span>{periodLabel(tip.key, granularity)}</span>
             <strong>{exact(current[hover])}</strong>
             {prior && (
               <small>

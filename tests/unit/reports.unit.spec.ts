@@ -7,10 +7,14 @@ import {
   couponPerformance,
   inventoryReport,
   paymentMix,
+  restockReason,
   salesBreakdown,
   slowSellers,
   statusFunnel,
+  stockInsights,
+  stockLabel,
   timeSeries,
+  type InventoryRow,
   type ReportLookups,
   type ReportOrder,
   type ReportProduct,
@@ -67,6 +71,79 @@ describe('report ranges (Pakistan time)', () => {
     const r = parseReportRange({ range: '7d' }, NOW)
     expect(bucketKeys(r, 'day')).toHaveLength(7)
     expect(bucketKeys(parseReportRange({ range: 'ytd' }, NOW), 'month')).toHaveLength(11)
+  })
+
+  it('groups by year, and keeps the chosen grouping in links', () => {
+    expect(bucketKey(new Date('2026-11-04T10:00:00Z'), 'year')).toBe('2026-01-01')
+    const r = parseReportRange({ range: 'custom', from: '2024-06-01', to: '2026-02-01', group: 'year' }, NOW)
+    expect(r.granularity).toBe('year')
+    expect(bucketKeys(r, 'year')).toEqual(['2024-01-01', '2025-01-01', '2026-01-01'])
+    expect(rangeQuery(r)).toContain('group=year')
+  })
+
+  it('ignores an unknown grouping and picks one from the range', () => {
+    const r = parseReportRange({ range: '30d', group: 'decade' }, NOW)
+    expect(r.group).toBeUndefined()
+    expect(r.granularity).toBe('day')
+    expect(rangeQuery(r)).not.toContain('group')
+  })
+
+  it('covers the whole of last year', () => {
+    const r = parseReportRange({ range: 'last_year' }, NOW)
+    expect(pktDay(r.from)).toBe('2025-01-01')
+    expect(pktDay(new Date(r.to.getTime() - 1))).toBe('2025-12-31')
+  })
+})
+
+describe('stock suggestions', () => {
+  const row = (over: Partial<InventoryRow>): InventoryRow => ({
+    id: 1,
+    title: 'A',
+    stock: 50,
+    stockValue: 0,
+    unitsSold: 10,
+    daysOfCover: 30,
+    status: 'in_stock',
+    lowOptions: [],
+    missingCost: false,
+    established: true,
+    ...over,
+  })
+
+  it('suggests restocking what sells and is running out, soonest first', () => {
+    const { restock } = stockInsights([
+      row({ id: 1, daysOfCover: 30 }),
+      row({ id: 2, daysOfCover: 14 }),
+      row({ id: 3, daysOfCover: 3 }),
+      row({ id: 4, daysOfCover: 40, status: 'low_stock' }),
+      row({ id: 5, unitsSold: 0, daysOfCover: null, status: 'out_of_stock', stock: 0 }),
+    ])
+    expect(restock.map((r) => r.id)).toEqual([3, 2, 4])
+  })
+
+  it('lists a sold-out option first, and says which one', () => {
+    const gone = row({ id: 2, stock: 147, daysOfCover: 900, status: 'out_of_stock', lowOptions: [{ label: 'Forest Pine', stock: 0 }] })
+    const { restock } = stockInsights([row({ id: 1, daysOfCover: 3 }), gone])
+    expect(restock.map((r) => r.id)).toEqual([2, 1])
+    expect(restockReason(gone)).toBe('Forest Pine (0 left)')
+    expect(restockReason(row({ daysOfCover: 3 }))).toBe('About 3 days of stock left')
+  })
+
+  it('does not call a product out of stock when only one option is', () => {
+    expect(stockLabel({ status: 'out_of_stock', stock: 147, lowOptions: [{ label: 'Forest Pine', stock: 0 }] })).toBe('Option sold out')
+    expect(stockLabel({ status: 'out_of_stock', stock: 0, lowOptions: [] })).toBe('Out of stock')
+    expect(stockLabel({ status: 'low_stock', stock: 2, lowOptions: [] })).toBe('Low stock')
+  })
+
+  it('suggests promoting established stock that is not moving, unsold first', () => {
+    const { promote } = stockInsights([
+      row({ id: 1, daysOfCover: 30 }),
+      row({ id: 2, daysOfCover: 60 }),
+      row({ id: 3, unitsSold: 0, daysOfCover: null }),
+      row({ id: 4, unitsSold: 0, daysOfCover: null, established: false }),
+      row({ id: 5, unitsSold: 0, daysOfCover: null, stock: 0, status: 'out_of_stock' }),
+    ])
+    expect(promote.map((r) => r.id)).toEqual([3, 2])
   })
 })
 

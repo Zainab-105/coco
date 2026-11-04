@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 /**
  * Storefront journey against a dev server with the sample catalogue (`npm run seed:sample`).
@@ -51,6 +51,98 @@ test('wishlist keeps saved products', async ({ page }) => {
   await page.getByRole('button', { name: /Add Signature Gift Set to wishlist/ }).click()
   await page.goto('/wishlist')
   await expect(page.getByRole('link', { name: 'Signature Gift Set' })).toBeVisible()
+})
+
+/** A real finger swipe (touch events through the browser), right to left. */
+async function swipeLeft(page: Page, box: { x: number; y: number; width: number; height: number }) {
+  const client = await page.context().newCDPSession(page)
+  const y = box.y + box.height / 2
+  const point = (x: number) => [{ x, y }]
+  const startX = box.x + box.width * 0.85
+  const endX = box.x + box.width * 0.1
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: point(startX) })
+  for (let step = 1; step <= 8; step++) {
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: point(startX + ((endX - startX) * step) / 8) })
+  }
+  await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+}
+
+const diffuserCard = (page: Page) => page.getByRole('article').filter({ has: page.getByRole('link', { name: 'Hanging Car Diffuser', exact: true }) }).first()
+
+test('swiping a product card shows its video without leaving the page', async ({ page }) => {
+  await page.goto('/collections/car-scents')
+  const card = diffuserCard(page)
+  const video = card.locator('video')
+  await expect(video).toHaveAttribute('poster', /.+/)
+  await expect(video).toHaveJSProperty('paused', true)
+
+  const carousel = card.locator('[aria-roledescription="carousel"]')
+  await carousel.scrollIntoViewIfNeeded()
+  const box = (await carousel.boundingBox())!
+
+  // A swipe does nothing until client-side code is running, so repeat it only while still on slide 1.
+  await expect(async () => {
+    const first = (await card.getByRole('group', { name: /^1 of / }).boundingBox())!
+    if (Math.abs(first.x - box.x) < 1) await swipeLeft(page, box)
+    const slide = (await card.getByRole('group', { name: /^2 of / }).boundingBox())!
+    expect(Math.abs(slide.x - box.x)).toBeLessThan(5)
+  }).toPass({ timeout: 15_000 })
+
+  await expect(video).toHaveJSProperty('paused', false)
+  await expect(page).toHaveURL(/\/collections\/car-scents$/)
+})
+
+test('Quick View opens from a product card on a phone and adds to the cart', async ({ page }) => {
+  await page.goto('/collections/gift-sets')
+  await page.getByRole('button', { name: 'Quick view Signature Gift Set' }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Signature Gift Set' })
+  await expect(dialog).toBeVisible()
+  await expect(page).toHaveURL(/\/collections\/gift-sets$/)
+
+  await dialog.getByRole('button', { name: /add to cart/i }).click()
+  await expect(page.getByRole('dialog', { name: /Your cart/ }).getByText('Signature Gift Set')).toBeVisible()
+})
+
+test('Quick Add puts a simple product straight in the cart', async ({ page }) => {
+  await page.goto('/collections/gift-sets')
+  await page.getByRole('button', { name: 'Add to cart: Signature Gift Set' }).click()
+  await expect(page.getByRole('dialog', { name: /Your cart/ }).getByText('Signature Gift Set')).toBeVisible()
+})
+
+test('Quick Add asks for a fragrance first when the product needs one', async ({ page }) => {
+  await page.goto('/collections/car-scents')
+  await page.getByRole('button', { name: 'Choose fragrance: Hanging Car Diffuser' }).first().click()
+  const dialog = page.getByRole('dialog', { name: 'Hanging Car Diffuser' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('radio', { name: 'Cool Ice' })).toBeVisible()
+})
+
+test.describe('on desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 }, hasTouch: false, isMobile: false })
+
+  test('arrows browse a product card, and Quick View opens on hover', async ({ page }) => {
+    await page.goto('/collections/car-scents')
+    const card = diffuserCard(page)
+    await card.hover()
+
+    const carousel = card.locator('[aria-roledescription="carousel"]')
+    const box = (await carousel.boundingBox())!
+    await expect(async () => {
+      await card.getByRole('button', { name: 'Show video 2' }).click()
+      const slide = (await card.getByRole('group', { name: /^2 of / }).boundingBox())!
+      expect(Math.abs(slide.x - box.x)).toBeLessThan(5)
+    }).toPass({ timeout: 15_000 })
+
+    await card.getByRole('button', { name: 'Next image' }).click()
+    await expect(async () => {
+      const slide = (await card.getByRole('group', { name: /^3 of / }).boundingBox())!
+      expect(Math.abs(slide.x - box.x)).toBeLessThan(5)
+    }).toPass()
+
+    await card.getByRole('button', { name: 'Quick view Hanging Car Diffuser' }).click()
+    await expect(page.getByRole('dialog', { name: 'Hanging Car Diffuser' })).toBeVisible()
+  })
 })
 
 test('unknown products return the 404 page', async ({ page }) => {

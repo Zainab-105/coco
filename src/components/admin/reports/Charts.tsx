@@ -2,7 +2,9 @@
  * Small server-rendered SVG charts for the admin reports. No chart library: the data is a few
  * dozen points, and plain SVG keeps the admin bundle unchanged. Hover a point for its value.
  */
-import { niceMax, shortDate } from './chartScale'
+import type { Granularity } from '@/lib/reports/range'
+
+import { niceMax, periodLabel } from './chartScale'
 
 const BURGUNDY = '#6b1f2a'
 const MUTED = 'var(--theme-elevation-400)'
@@ -29,19 +31,19 @@ function frame(max: number, format: (n: number) => string) {
   })
 }
 
-function xLabels(points: ChartPoint[], x: (i: number) => number) {
+function xLabels(points: ChartPoint[], x: (i: number) => number, granularity?: Granularity) {
   const every = Math.max(1, Math.ceil(points.length / 7))
   return points.map((p, i) =>
     i % every === 0 || i === points.length - 1 ? (
       <text key={p.key} x={x(i)} y={H - 8} textAnchor="middle" fontSize={11} fill={MUTED}>
-        {shortDate(p.key)}
+        {periodLabel(p.key, granularity)}
       </text>
     ) : null,
   )
 }
 
 /** Vertical bars per period. */
-export function BarChart({ label, points, format }: { label: string; points: ChartPoint[]; format: (n: number) => string }) {
+export function BarChart({ label, points, format, granularity }: { label: string; points: ChartPoint[]; format: (n: number) => string; granularity?: Granularity }) {
   const max = niceMax(Math.max(...points.map((p) => p.value), 0))
   const innerW = W - PAD.left - PAD.right
   const innerH = H - PAD.top - PAD.bottom
@@ -56,11 +58,11 @@ export function BarChart({ label, points, format }: { label: string; points: Cha
         const h = (p.value / max) * innerH
         return (
           <rect key={p.key} x={x(i) - barW / 2} y={PAD.top + innerH - h} width={barW} height={h} fill={BURGUNDY} opacity={0.85} rx={1}>
-            <title>{`${shortDate(p.key)}: ${format(p.value)}`}</title>
+            <title>{`${periodLabel(p.key, granularity)}: ${format(p.value)}`}</title>
           </rect>
         )
       })}
-      {xLabels(points, x)}
+      {xLabels(points, x, granularity)}
     </svg>
   )
 }

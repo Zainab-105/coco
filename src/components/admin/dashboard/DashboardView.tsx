@@ -23,13 +23,13 @@ import type { User } from '@/payload-types'
 import { hasRole } from '@/access/roles'
 import { computeKpis, salesBreakdown, statusFunnel, timeSeries } from '@/lib/reports/compute'
 import { loadExpenses, loadLookups, loadOrders } from '@/lib/reports/load'
-import { parseReportRange, RANGE_PRESETS, rangeQuery, type RangePreset } from '@/lib/reports/range'
+import { parseReportRange, pktDay, rangeQuery } from '@/lib/reports/range'
 
 import { StatusPill } from '../StatusCell'
 import { InsightChart } from '../reports/InsightChart'
 import { count, Delta, money, percent } from '../reports/ReportParts'
 
-const PERIODS: RangePreset[] = ['7d', '30d', '90d']
+const PERIODS = { today: 'Today', '7d': '7 days', '30d': '30 days', '90d': '90 days', ytd: 'This year', last_year: 'Last year' } as const
 const PIPELINE = ['new', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned', 'refunded'] as const
 const orderLink = (query: string) => `/admin/collections/orders${query ? `?${query}` : ''}`
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString()
@@ -90,7 +90,7 @@ function Metric({
         {label} <ArrowUpRight size={13} aria-hidden />
       </span>
       <strong className="coco-metric__value">{value}</strong>
-      <Delta current={current} previous={previous} lowerIsBetter={lowerIsBetter} />
+      {previous !== undefined && <Delta current={current} previous={previous} lowerIsBetter={lowerIsBetter} />}
       {note && <small className="coco-muted">{note}</small>}
       {spark && <Sparkline values={spark} />}
     </Link>
@@ -127,12 +127,34 @@ export async function DashboardView({ initPageResult, searchParams }: AdminViewS
   const user = req.user as User | null
   const canSeeCosts = hasRole(user, ['owner', 'manager'])
 
-  const asked = typeof searchParams?.period === 'string' ? (searchParams.period as RangePreset) : '30d'
-  const period = PERIODS.includes(asked) ? asked : '30d'
-  const range = parseReportRange({ range: period, compare: 'previous' })
+  const asked = typeof searchParams?.period === 'string' ? searchParams.period : '30d'
+  const range = parseReportRange({
+    range: asked === 'custom' || asked in PERIODS ? asked : '30d',
+    compare: 'previous',
+    from: searchParams?.from,
+    to: searchParams?.to,
+  })
+  const period = range.preset
   const previous = range.previous!
 
-  const [newOrders, toVerify, toShip, pendingReviews, openTickets, openCarts, orders, previousOrders, expenses, previousExpenses, lookups, recent, lowStock] = await Promise.all([
+  const [
+    newOrders,
+    toVerify,
+    toShip,
+    pendingReviews,
+    openTickets,
+    openCarts,
+    orders,
+    previousOrders,
+    expenses,
+    previousExpenses,
+    lookups,
+    recent,
+    lowStock,
+    totalCustomers,
+    repeatCustomers,
+    liveProducts,
+  ] = await Promise.all([
     payload.count({ collection: 'orders', where: { status: { equals: 'new' } } }),
     payload.count({ collection: 'orders', where: { 'payment.status': { equals: 'awaiting_verification' } } }),
     payload.count({ collection: 'orders', where: { status: { in: ['confirmed', 'processing'] } } }),
@@ -162,20 +184,26 @@ export async function DashboardView({ initPageResult, searchParams }: AdminViewS
       depth: 0,
       select: { title: true, totalStock: true, stockStatus: true },
     }),
+    payload.count({ collection: 'customers' }),
+    payload.count({ collection: 'customers', where: { orderCount: { greater_than: 1 } } }),
+    payload.count({ collection: 'products', where: { status: { equals: 'published' } } }),
   ])
 
   const k = computeKpis(orders, expenses, range)
   const p = computeKpis(previousOrders, previousExpenses, previous)
-  const series = timeSeries(orders, range, 'day')
-  const previousSeries = timeSeries(previousOrders, previous, 'day')
+  const series = timeSeries(orders, range, range.granularity)
+  const previousSeries = timeSeries(previousOrders, previous, range.granularity)
   const funnel = statusFunnel(orders)
   const pipelineMax = Math.max(...funnel.map((f) => f.count), 1)
-  const topProducts = salesBreakdown(orders, lookups).products.slice(0, 5)
+  const breakdown = salesBreakdown(orders, lookups)
+  const topProducts = breakdown.products.slice(0, 5)
   const topMax = Math.max(...topProducts.map((t) => t.netSales), 1)
+  const topCategories = breakdown.categories.slice(0, 5)
+  const categoryMax = Math.max(...topCategories.map((t) => t.netSales), 1)
 
   const { hello, date } = greeting()
   const firstName = user?.name?.split(' ')[0]
-  const periodLabel = RANGE_PRESETS[period]
+  const periodLabel = range.label
   const reports = (tab: string) => `/admin/reports?tab=${tab}&${rangeQuery(range)}`
 
   return (
@@ -234,16 +262,25 @@ export async function DashboardView({ initPageResult, searchParams }: AdminViewS
             {periodLabel}
           </h2>
           <nav className="coco-tabs" aria-label="Period">
-            {PERIODS.map((value) => (
+            {Object.entries(PERIODS).map(([value, label]) => (
               <Link key={value} href={`/admin?period=${value}`} scroll={false} className={value === period ? 'is-active' : ''} aria-current={value === period ? 'true' : undefined}>
-                {value.replace('d', ' days')}
+                {label}
               </Link>
             ))}
           </nav>
+          <form action="/admin" className="coco-dash__custom" aria-label="Custom dates">
+            <input type="hidden" name="period" value="custom" />
+            <input type="date" name="from" aria-label="From" required defaultValue={pktDay(range.from)} />
+            <span className="coco-muted">to</span>
+            <input type="date" name="to" aria-label="To" required defaultValue={pktDay(new Date(range.to.getTime() - 1))} />
+            <button type="submit" className="coco-btn">
+              Apply
+            </button>
+          </form>
         </div>
 
         <div className="coco-metrics">
-          <Metric label="Net sales" value={money(k.netSales)} current={k.netSales} previous={p.netSales} href={reports('sales')} spark={series.map((s) => s.netSales)} />
+          <Metric label="Net sales" value={money(k.netSales)} current={k.netSales} previous={p.netSales} href={reports('sales')} spark={series.map((s) => s.netSales)} note={`${money(k.totalCollected)} collected with delivery`} />
           <Metric label="Orders" value={count(k.revenueOrders)} current={k.revenueOrders} previous={p.revenueOrders} href={reports('sales')} spark={series.map((s) => s.orders)} />
           <Metric label="Avg. order value" value={money(k.averageOrderValue)} current={k.averageOrderValue} previous={p.averageOrderValue} href={reports('customers')} note={`${percent(k.repeatRate)} repeat customers`} />
           {canSeeCosts ? (
@@ -251,6 +288,29 @@ export async function DashboardView({ initPageResult, searchParams }: AdminViewS
           ) : (
             <Metric label="Units sold" value={count(k.units)} current={k.units} previous={p.units} href={reports('sales')} />
           )}
+        </div>
+      </section>
+
+      <section aria-labelledby="dash-store">
+        <h2 id="dash-store" className="coco-section">
+          All time
+        </h2>
+        <div className="coco-metrics">
+          <Metric label="Total customers" value={count(totalCustomers.totalDocs)} current={totalCustomers.totalDocs} href="/admin/collections/customers" />
+          <Metric
+            label="Repeat customers"
+            value={count(repeatCustomers.totalDocs)}
+            current={repeatCustomers.totalDocs}
+            href="/admin/collections/customers?where[orderCount][greater_than]=1"
+            note="Two or more orders"
+          />
+          <Metric label="Live products" value={count(liveProducts.totalDocs)} current={liveProducts.totalDocs} href="/admin/collections/products?where[status][equals]=published" />
+          <Metric
+            label="Low or out of stock"
+            value={count(lowStock.totalDocs)}
+            current={lowStock.totalDocs}
+            href="/admin/collections/products?where[stockStatus][in]=low_stock,out_of_stock"
+          />
         </div>
       </section>
 
@@ -263,7 +323,8 @@ export async function DashboardView({ initPageResult, searchParams }: AdminViewS
             </span>
           </header>
           <InsightChart
-            label={`Net sales per day, ${periodLabel.toLowerCase()}`}
+            label={`Net sales per ${range.granularity}, ${periodLabel.toLowerCase()}`}
+            granularity={range.granularity}
             metrics={[
               { key: 'netSales', label: 'Net sales', kind: 'money' },
               { key: 'orders', label: 'Orders', kind: 'count' },
@@ -351,6 +412,33 @@ export async function DashboardView({ initPageResult, searchParams }: AdminViewS
                       </span>
                       <span className="coco-top__bar">
                         <i style={{ width: `${(t.netSales / topMax) * 100}%` }} />
+                      </span>
+                      <small className="coco-muted">{t.units} sold</small>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+
+          <section className="coco-panel">
+            <header className="coco-panel__head">
+              <h2>Top categories</h2>
+              <Link href={reports('sales')}>All categories</Link>
+            </header>
+            {topCategories.length === 0 ? (
+              <p className="coco-muted">No sales in this period yet.</p>
+            ) : (
+              <ol className="coco-top">
+                {topCategories.map((t) => (
+                  <li key={t.key}>
+                    <Link href={reports('sales')}>
+                      <span className="coco-top__row">
+                        <span>{t.label}</span>
+                        <strong>{money(t.netSales)}</strong>
+                      </span>
+                      <span className="coco-top__bar">
+                        <i style={{ width: `${(t.netSales / categoryMax) * 100}%` }} />
                       </span>
                       <small className="coco-muted">{t.units} sold</small>
                     </Link>
