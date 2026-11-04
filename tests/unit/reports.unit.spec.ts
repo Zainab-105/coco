@@ -7,10 +7,12 @@ import {
   couponPerformance,
   inventoryReport,
   paymentMix,
+  restockReason,
   salesBreakdown,
   slowSellers,
   statusFunnel,
   stockInsights,
+  stockLabel,
   timeSeries,
   type InventoryRow,
   type ReportLookups,
@@ -102,6 +104,7 @@ describe('stock suggestions', () => {
     unitsSold: 10,
     daysOfCover: 30,
     status: 'in_stock',
+    lowOptions: [],
     missingCost: false,
     established: true,
     ...over,
@@ -116,6 +119,20 @@ describe('stock suggestions', () => {
       row({ id: 5, unitsSold: 0, daysOfCover: null, status: 'out_of_stock', stock: 0 }),
     ])
     expect(restock.map((r) => r.id)).toEqual([3, 2, 4])
+  })
+
+  it('lists a sold-out option first, and says which one', () => {
+    const gone = row({ id: 2, stock: 147, daysOfCover: 900, status: 'out_of_stock', lowOptions: [{ label: 'Forest Pine', stock: 0 }] })
+    const { restock } = stockInsights([row({ id: 1, daysOfCover: 3 }), gone])
+    expect(restock.map((r) => r.id)).toEqual([2, 1])
+    expect(restockReason(gone)).toBe('Forest Pine (0 left)')
+    expect(restockReason(row({ daysOfCover: 3 }))).toBe('About 3 days of stock left')
+  })
+
+  it('does not call a product out of stock when only one option is', () => {
+    expect(stockLabel({ status: 'out_of_stock', stock: 147, lowOptions: [{ label: 'Forest Pine', stock: 0 }] })).toBe('Option sold out')
+    expect(stockLabel({ status: 'out_of_stock', stock: 0, lowOptions: [] })).toBe('Out of stock')
+    expect(stockLabel({ status: 'low_stock', stock: 2, lowOptions: [] })).toBe('Low stock')
   })
 
   it('suggests promoting established stock that is not moving, unsold first', () => {

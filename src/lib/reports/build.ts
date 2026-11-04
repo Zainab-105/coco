@@ -8,10 +8,12 @@ import {
   paymentMix,
   PROMOTE_OVER_DAYS,
   RESTOCK_WITHIN_DAYS,
+  restockReason,
   salesBreakdown,
   slowSellers,
   statusFunnel,
   stockInsights,
+  stockLabel,
   timeSeries,
   topCities,
   type Kpis,
@@ -98,7 +100,7 @@ export function financeRows(k: Kpis) {
     { label: 'Gift wrap', value: k.giftWrap, note: '' },
     { label: 'Total collected', value: k.totalCollected, note: 'What customers paid on revenue orders', strong: true },
     { label: 'Cost of goods', value: -k.costOfGoods, note: 'Cost price saved on each order line' },
-    { label: 'Expenses', value: -k.expenses, note: 'Recorded under Reports > Expenses' },
+    { label: 'Expenses', value: -k.expenses, note: 'Recorded under Finance > Expenses' },
     { label: 'Estimated profit', value: k.estimatedProfit, note: 'Estimate: excludes costs not recorded as expenses', strong: true },
   ]
 }
@@ -164,7 +166,7 @@ export function reportTables(report: Report) {
       },
       (col) => [
         col('Product', 'text', (r) => r.title),
-        col('Status', 'text', (r) => r.status),
+        col('Status', 'text', (r) => stockLabel(r)),
         col('In stock', 'number', (r) => r.stock),
         col('Sold in period', 'number', (r) => r.unitsSold),
         col('Days of cover', 'number', (r) => r.daysOfCover),
@@ -180,9 +182,9 @@ export function reportTables(report: Report) {
       },
       (col) => [
         col('Product', 'text', (r) => r.title),
+        col('Why', 'text', (r) => restockReason(r)),
         col('In stock', 'number', (r) => r.stock),
         col('Sold in period', 'number', (r) => r.unitsSold),
-        col('Days of cover', 'number', (r) => r.daysOfCover),
       ],
     ),
     promote: table(

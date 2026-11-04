@@ -327,8 +327,8 @@ function Inventory({ report, tables, exportHref }: SectionProps) {
       <KpiGrid>
         <Kpi label="Units in stock" value={count(inv.units)} />
         <Kpi label="Stock value (cost)" value={money(inv.stockValue)} />
-        <Kpi label="Low stock" value={count(inv.lowStock)} />
-        <Kpi label="Out of stock" value={count(inv.outOfStock)} />
+        <Kpi label="Low stock" value={count(inv.lowStock)} hint="Products with any one option low, so this can be higher than the dashboard" />
+        <Kpi label="Out of stock" value={count(inv.outOfStock)} hint="Products with any one option sold out" />
       </KpiGrid>
       <div style={grid()}>
         <ReportTable table={tables.restock} exportHref={exportHref('restock')} />

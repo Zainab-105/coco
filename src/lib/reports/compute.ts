@@ -361,6 +361,8 @@ export type InventoryRow = {
   /** Days the current stock lasts at the period's sales rate; null when nothing sold. */
   daysOfCover: number | null
   status: 'in_stock' | 'low_stock' | 'out_of_stock'
+  /** Options (e.g. fragrances) at or below the low-stock level, with how many are left. */
+  lowOptions: { label: string; stock: number }[]
   missingCost: boolean
   /** Published before the period began, so its sales in the period are a fair signal. */
   established: boolean
@@ -407,6 +409,7 @@ export function inventoryReport(orders: ReportOrder[], products: ReportProduct[]
         unitsSold,
         daysOfCover: unitsSold ? Math.round(stock / (unitsSold / days)) : null,
         status: lowest <= 0 ? 'out_of_stock' : lowest <= p.lowStockThreshold ? 'low_stock' : 'in_stock',
+        lowOptions: p.variants.filter((v) => v.stock <= p.lowStockThreshold).map((v) => ({ label: v.label, stock: Math.max(0, v.stock) })),
         missingCost,
         established: p.status === 'published' && new Date(p.createdAt) < range.from,
       }
@@ -423,6 +426,21 @@ export function inventoryReport(orders: ReportOrder[], products: ReportProduct[]
   }
 }
 
+/** Plain words for a product's stock: "147 in stock" with one fragrance gone is not "out of stock". */
+export function stockLabel(r: Pick<InventoryRow, 'status' | 'stock' | 'lowOptions'>): string {
+  if (r.status === 'in_stock') return 'In stock'
+  if (r.status === 'out_of_stock') return r.stock > 0 ? 'Option sold out' : 'Out of stock'
+  return r.lowOptions.length ? 'Option low' : 'Low stock'
+}
+
+/** Why a product is on the restock list, naming the options that need it. */
+export function restockReason(r: Pick<InventoryRow, 'status' | 'stock' | 'lowOptions' | 'daysOfCover'>): string {
+  if (r.lowOptions.length) return r.lowOptions.map((o) => `${o.label} (${o.stock} left)`).join(', ')
+  if (r.status === 'out_of_stock') return 'Sold out'
+  if (r.status === 'low_stock') return `${r.stock} left`
+  return `About ${r.daysOfCover} days of stock left`
+}
+
 export const RESTOCK_WITHIN_DAYS = 14
 export const PROMOTE_OVER_DAYS = 60
 
@@ -433,7 +451,7 @@ export const PROMOTE_OVER_DAYS = 60
 export function stockInsights(rows: InventoryRow[]) {
   const restock = rows
     .filter((r) => r.unitsSold > 0 && (r.status !== 'in_stock' || (r.daysOfCover ?? Infinity) <= RESTOCK_WITHIN_DAYS))
-    .sort((a, b) => (a.daysOfCover ?? Infinity) - (b.daysOfCover ?? Infinity))
+    .sort((a, b) => Number(b.status === 'out_of_stock') - Number(a.status === 'out_of_stock') || (a.daysOfCover ?? Infinity) - (b.daysOfCover ?? Infinity))
   const promote = rows
     .filter((r) => r.established && r.stock > 0 && r.status === 'in_stock' && (r.daysOfCover === null || r.daysOfCover >= PROMOTE_OVER_DAYS))
     .sort((a, b) => (b.daysOfCover ?? Infinity) - (a.daysOfCover ?? Infinity) || b.stock - a.stock)

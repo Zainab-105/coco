@@ -90,7 +90,7 @@ function Metric({
         {label} <ArrowUpRight size={13} aria-hidden />
       </span>
       <strong className="coco-metric__value">{value}</strong>
-      <Delta current={current} previous={previous} lowerIsBetter={lowerIsBetter} />
+      {previous !== undefined && <Delta current={current} previous={previous} lowerIsBetter={lowerIsBetter} />}
       {note && <small className="coco-muted">{note}</small>}
       {spark && <Sparkline values={spark} />}
     </Link>
